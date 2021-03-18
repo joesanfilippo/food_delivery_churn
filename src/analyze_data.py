@@ -1,4 +1,6 @@
-import os 
+import io
+import os
+import boto3
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -8,7 +10,6 @@ font = {'weight': 'bold'
        ,'size': 16}
 plt.rc('font', **font)
 from matplotlib.ticker import PercentFormatter, StrMethodFormatter
-from clean_data import Query_results
 
 def kde_continuous_plot(values, target, ax):
     """ Plots a Kernel Density Estimate of Churned vs Active users using the values passed.
@@ -66,68 +67,38 @@ def bar_categorical_plot(cat_df, cat_col, ax):
 
 
 if __name__ == '__main__':
+    
+    ## Load training data from AWS
+    aws_id = os.environ['AWS_ACCESS_KEY_ID']
+    aws_secret = os.environ['AWS_SECRET_ACCESS_KEY']
+    client = boto3.client('s3'
+                         ,aws_access_key_id=aws_id
+                         ,aws_secret_access_key=aws_secret)
 
-    ## Pull data and clean it for analysis
-    params = {'p_param': ''}
-    churn_query_id = 714507
-    api_key = os.environ['REDASH_API_KEY']
-    query_url = os.environ['REDASH_LINK']
-    got_cities = ["King's Landing"
-                 ,"Braavos"
-                 ,"Qarth"
-                 ,"Old Valyria"
-                 ,"Volantis"
-                 ,"Asshai"
-                 ,"Meereen"
-                 ,"Astapor"
-                 ,"Old Ghis"
-                 ,"Oldtown"
-                 ,"Pentos"
-                 ,"Qohor"
-                 ,"Sathar"
-                 ,"Sunspear"
-                 ,"Lannisport"
-                 ,"Vaes Dothrak"
-                 ,"White Harbor"
-                 ,"Yunkai"
-                 ,"The Wall"
-                 ,"Ghozi"
-                 ,"Gulltown"
-                 ,"Lys"
-                 ,"Mantarys"
-                 ,"Tyria"
-                 ,"Tolos"
-                 ,"Samyrian"
-                 ,"Oros"
-                 ,"Norvos"]
-    clean_dict = {'datetime_cols': ['signup_time_utc', 'last_order_time_utc']
-                 ,'boolean_cols': ['first_order_delivered_on_time']
-                 ,'target_column': 'last_order_time_utc'
-                 ,'days_to_churn': 30
-                 ,'city_column': 'city_name'
-                 ,'fake_cities': got_cities
-                 }
-    
-    churn_data = Query_results(query_url, churn_query_id, api_key, params)
-    churn_data.clean_data(clean_dict)
-    
+    train_obj = client.get_object(Bucket='food-delivery-churn', Key='churn_train.csv')
+    churn_train_X = pd.read_csv(io.BytesIO(train_obj['Body'].read())
+                            ,encoding='utf8'
+                            ,parse_dates=['signup_time_utc', 'last_order_time_utc']
+                            ,date_parser=pd.to_datetime)
+    churn_train_y = churn_train_X.pop('churned_user')
+
     ## Visualize continuous predictors using KDE plots
-    continuous_data = churn_data.df.select_dtypes(include=[np.number, 'boolean']).drop('user_id', axis=1)
+    continuous_data = churn_train_X.select_dtypes(include=[np.number, 'boolean']).drop('user_id', axis=1)
     continuous_columns = continuous_data.columns.tolist()
-
+    
     fig, axs = plt.subplots(nrows=np.ceil(len(continuous_columns)/2).astype(int), ncols=2, figsize=(20,50))
     
     for col, ax in zip(continuous_columns, axs.flatten()):
-        kde_continuous_plot(continuous_data[col], churn_data.target, ax)
+        kde_continuous_plot(continuous_data[col], churn_train_y, ax)
     
     plt.tight_layout(rect=(0,0,1,0.98))
     plt.suptitle("KDE Plots for Continuous Predictors", y=0.99, fontsize=35)
     plt.savefig('images/kde_plots.png')
 
     ## Visualize categorical predictors using stacked 100% fill barcharts
-    categorical_data = pd.concat([churn_data.df.select_dtypes(include=['object']), churn_data.target],axis=1)
+    categorical_data = pd.concat([churn_train_X.select_dtypes(include=['object']), churn_train_y],axis=1)
     categorical_columns = categorical_data.columns.tolist()[:-1]
-    # print(categorical_data)
+    
     fig, axs = plt.subplots(nrows=len(categorical_columns), ncols=1, figsize=(20,35))
 
     for col, ax in zip(categorical_columns, axs.flatten()):
