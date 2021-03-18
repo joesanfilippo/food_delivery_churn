@@ -11,6 +11,7 @@ if __name__ == '__main__':
     churn_query_id = 714507
     api_key = os.environ['REDASH_API_KEY']
     query_url = os.environ['REDASH_LINK']
+
     got_cities = ["King's Landing"
                  ,"Braavos"
                  ,"Qarth"
@@ -39,6 +40,7 @@ if __name__ == '__main__':
                  ,"Samyrian"
                  ,"Oros"
                  ,"Norvos"]
+
     clean_dict = {'datetime_cols': ['signup_time_utc', 'last_order_time_utc']
                  ,'boolean_cols': ['first_order_delivered_on_time']
                  ,'target_column': 'last_order_time_utc'

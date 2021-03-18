@@ -91,6 +91,9 @@ if __name__ == '__main__':
     for col, ax in zip(continuous_columns, axs.flatten()):
         kde_continuous_plot(continuous_data[col], churn_train_y, ax)
     
+    if len(continuous_columns) % 2 == 1:
+        fig.delaxes(axs[np.ceil(len(continuous_columns)/2).astype(int)-1, 1])
+
     plt.tight_layout(rect=(0,0,1,0.98))
     plt.suptitle("KDE Plots for Continuous Predictors", y=0.99, fontsize=35)
     plt.savefig('images/kde_plots.png')
@@ -107,4 +110,3 @@ if __name__ == '__main__':
     plt.tight_layout(rect=(0,0,1,0.98))
     plt.suptitle("100% Fill Barchart for Categorical Predictors", y=0.99, fontsize=35)
     plt.savefig('images/barchart_plots.png')
-    
