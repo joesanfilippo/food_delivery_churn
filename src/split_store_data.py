@@ -11,7 +11,9 @@ if __name__ == '__main__':
     churn_query_id = 714507
     api_key = os.environ['REDASH_API_KEY']
     query_url = os.environ['REDASH_LINK']
-
+    
+    churn_data = Query_results(query_url, churn_query_id, api_key, params)
+    
     got_cities = ["King's Landing"
                  ,"Braavos"
                  ,"Qarth"
@@ -42,14 +44,12 @@ if __name__ == '__main__':
                  ,"Norvos"]
 
     clean_dict = {'datetime_cols': ['signup_time_utc', 'last_order_time_utc']
-                 ,'boolean_cols': ['first_order_delivered_on_time']
                  ,'target_column': 'last_order_time_utc'
                  ,'days_to_churn': 30
                  ,'city_column': 'city_name'
                  ,'fake_cities': got_cities
                  }
     
-    churn_data = Query_results(query_url, churn_query_id, api_key, params)
     churn_data.clean_data(clean_dict)
 
     churn_data_Xy = pd.concat([churn_data.df, churn_data.target], axis=1)

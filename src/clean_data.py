@@ -49,6 +49,21 @@ class Query_results(object):
         cleaned_cols = [col.replace(' ', '_').lower() for col in cleaned_cols]
         self.df.columns = cleaned_cols
 
+    def convert_booleans(self):
+        """ Converts any boolean columns to Boolean data type for further analysis
+        Args:
+            self (Query_results): A class of Query_results with self.df populated
+            boolean_cols (list): A list of boolean column names to convert to a Boolean data type
+
+        Returns:
+            None
+            Modifies self.df (Pandas DF): A Pandas Dataframe with the boolean columns converted
+        """
+        boolean_cols = self.df.select_dtypes(include=['bool']).columns.tolist()
+
+        for col in boolean_cols:
+            self.df[col] = self.df[col].astype(bool)
+
     def convert_datetimes(self, datetime_cols):
         """ Converts any datetime columns to a Pandas DateTime64 data type for further analysis
         Args:
@@ -61,19 +76,6 @@ class Query_results(object):
         """
         for col in datetime_cols:
             self.df[col] = pd.to_datetime(self.df[col])
-
-    def convert_booleans(self, boolean_cols):
-        """ Converts any boolean columns to Boolean data type for further analysis
-        Args:
-            self (Query_results): A class of Query_results with self.df populated
-            boolean_cols (list): A list of boolean column names to convert to a Boolean data type
-
-        Returns:
-            None
-            Modifies self.df (Pandas DF): A Pandas Dataframe with the boolean columns converted
-        """
-        for col in boolean_cols:
-            self.df[col] = self.df[col].astype(bool)
 
     def calculate_churned_user(self, target_column, days_to_churn=30):
         """ Calculates whether or not a user is considered churn based on the days_to_churn
@@ -124,8 +126,8 @@ class Query_results(object):
         """
         self.to_dataframe()
         self.clean_columns()
+        self.convert_booleans()
         self.convert_datetimes(kwargs_dict['datetime_cols'])
-        self.convert_booleans(kwargs_dict['boolean_cols'])
         try:
             self.calculate_churned_user(kwargs_dict['target_column'], kwargs_dict['days_to_churn'])
         except:

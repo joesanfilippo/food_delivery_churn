@@ -68,14 +68,16 @@ if __name__ == '__main__':
     churn_train_X_drop = churn_train_X.drop(['user_id', 'signup_time_utc', 'last_order_time_utc'], axis=1)
 
     ## Convert string columns to integers.
-    churn_train_X_drop = convert_cat_to_int(churn_train_X_drop, 'city_name')
-    churn_train_X_drop = convert_cat_to_int(churn_train_X_drop, 'city_group')
-    
+    object_cols = churn_train_X_drop.select_dtypes(include=['object']).columns.tolist()
+
+    for col in object_cols:
+        churn_train_X_drop = convert_cat_to_int(churn_train_X_drop, col)
+
     ## Only use first order columns
     # column_tuple = ("first_30", "city", "signup_to")
     # churn_train_X_drop = churn_train_X_drop.loc[:, churn_train_X_drop.columns.to_series().str.startswith(column_tuple)]
     
-    ## Only use select columns
+    ## Only use select columns 
     # select_columns = ['city_name'
     #                  ,'signup_to_order_hours'
     #                  ,'first_order_discount_percent'
@@ -89,7 +91,7 @@ if __name__ == '__main__':
     X_train = churn_train_X_drop.values
     y_train = churn_train_y.values
 
-    ## Random Search to find best hyperparams of each model
+    ## Grid or Random Search to find best hyperparams of each model
     logistic_regression_grid = {'penalty': ['l1', 'l2']
                                ,'fit_intercept': [True, False]
                                ,'class_weight': [None, 'balanced']
@@ -132,13 +134,13 @@ if __name__ == '__main__':
     random_forest_randomsearch.fit(X_train, y_train)
     gradient_boosting_randomsearch.fit(X_train, y_train)
     
-    # print(f"Best Logistic Parameters: {logistic_gridsearch.best_params_}")
-    # print(f"Best Random Forest Parameters: {random_forest_randomsearch.best_params_}")
-    # print(f"Best Gradient Boosting Parameters: {gradient_boosting_randomsearch.best_params_}")
+    print(f"Best Logistic Parameters: {logistic_gridsearch.best_params_}")
+    print(f"Best Random Forest Parameters: {random_forest_randomsearch.best_params_}")
+    print(f"Best Gradient Boosting Parameters: {gradient_boosting_randomsearch.best_params_}")
 
-    # print(f"Best Logistic Score: {logistic_gridsearch.best_score_:.4f}")
-    # print(f"Best Random Forest Score: {random_forest_randomsearch.best_score_:.4f}")
-    # print(f"Best Gradient Boosting Score: {gradient_boosting_randomsearch.best_score_:.4f}")
+    print(f"Best Logistic Score: {logistic_gridsearch.best_score_:.4f}")
+    print(f"Best Random Forest Score: {random_forest_randomsearch.best_score_:.4f}")
+    print(f"Best Gradient Boosting Score: {gradient_boosting_randomsearch.best_score_:.4f}")
 
     logistic_best_model = logistic_gridsearch.best_estimator_
     random_forest_best_model = random_forest_randomsearch.best_estimator_
@@ -154,10 +156,10 @@ if __name__ == '__main__':
     ## Dropping columns that aren't going to be relevant predictors
     churn_test_X_drop = churn_test_X.drop(['user_id', 'signup_time_utc', 'last_order_time_utc'], axis=1)
 
-    ## Convert string columns to integers.
-    churn_test_X_drop = convert_cat_to_int(churn_test_X_drop, 'city_name')
-    churn_test_X_drop = convert_cat_to_int(churn_test_X_drop, 'city_group')
-
+    ## Convert string columns to integers
+    for col in object_cols:
+        churn_test_X_drop = convert_cat_to_int(churn_test_X_drop, col)
+    
     ## Only use first order columns
     # churn_test_X_drop = churn_test_X_drop.loc[:, churn_test_X_drop.columns.to_series().str.startswith(column_tuple)]
     
@@ -167,7 +169,7 @@ if __name__ == '__main__':
     X_test = churn_test_X_drop.values
     y_test = churn_test_y.values
 
-    fig, ax = plt.subplots(figsize=(25,10))
+    fig, ax = plt.subplots(figsize=(20,25))
 
     plot_model_aoc(logistic_best_model, X_test, y_test, ax, plot_kwargs={'linestyle':'-'
                                                                         ,'linewidth': 3
@@ -185,4 +187,4 @@ if __name__ == '__main__':
     ax.set_ylabel("True Positivity Rate")
     ax.set_title("AOC Curve for Best Classifiers")                                                                    
 
-    plt.show()
+    plt.savefig('images/aoc_curves.png')
