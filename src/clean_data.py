@@ -7,13 +7,12 @@ class Query_results(object):
         """ Initialize an instance of the Query_results class that will be used to analyze user churn.
 
         Args:
-            query_url: The URL of the query software to use. This is stored in the user's .bash_profile
+            query_url (str): The URL of the query software to use. This is stored in the user's .bash_profile
                        or .zshrc file to avoid any identifying information of the company.
-            query_id: The unique identifier of the query to use. This is needed since the query is 
+            query_id (int): The unique identifier of the query to use. This is needed since the query is 
                       prewritten to avoid any identifying table or column names.
-            api_key: API key stored in the user's .bash_profile or .zshrc file.
-            params: Any unique parameters to be used in the query like dates or cities. As of 03/17/2021 
-                    there are no unique parameters to be used.
+            api_key (str): API key stored in the user's .bash_profile or .zshrc file.
+            params (dict): Any optional parameters to be used in the query like number of churn days, dates, or cities.
 
         Returns:
             None

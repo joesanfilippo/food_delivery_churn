@@ -4,15 +4,43 @@ import pandas as pd
 from clean_data import Query_results
 from sklearn.model_selection import train_test_split
 
-if __name__ == '__main__':
-
-    ## Pull data and clean it for analysis
-    params = {'p_param': ''}
-    churn_query_id = 714507
-    api_key = os.environ['REDASH_API_KEY']
-    query_url = os.environ['REDASH_LINK']
+def clean_store_data(churn_data, clean_dict, bucket_name):
+    """ Clean and store data in AWS bucket for later analysis
+    Args:
+        churn_data (Query_results): A Query_results object ready to be cleaned
+        clean_dict (dict): A dictionary containing keyword arguments to clean and store query results including:
+                            1. datetime_cols: Any columns containing datetime information
+                            2. target_column: Column to calculate churn based off of
+                            3. days_to_churn: The number of days to use before a user is considered "churned"
+                            4. city_column: Column which contains city names
+                            5. fake_cities: A list of fake city names to replace city_column with. Should be equal
+                                            or greater to the number of unique cities in city_column.
+        bucket_name (str): The name of the AWS S3 Bucket to store the training and test data in.
     
-    churn_data = Query_results(query_url, churn_query_id, api_key, params)
+    Returns: None
+             Stores the cleaned query results into the AWS bucket
+    """
+    churn_data.clean_data(clean_dict)
+
+    churn_data_Xy = pd.concat([churn_data.df, churn_data.target], axis=1)
+    churn_train, churn_test = train_test_split(churn_data_Xy, test_size=0.2, shuffle=True, stratify=churn_data.target)
+
+    train_filename = f"churn_{clean_dict['days_to_churn']}_train.csv"
+    test_filename = f"churn_{clean_dict['days_to_churn']}_test.csv"
+
+    churn_train.to_csv(train_filename, index=False)
+    churn_test.to_csv(test_filename, index=False)
+
+    aws_id = os.environ['AWS_ACCESS_KEY_ID']
+    aws_secret = os.environ['AWS_SECRET_ACCESS_KEY']
+    client = boto3.client('s3'
+                         ,aws_access_key_id=aws_id
+                         ,aws_secret_access_key=aws_secret)
+                         
+    client.upload_file(Filename=train_filename, Bucket=bucket_name, Key=train_filename)
+    client.upload_file(Filename=test_filename, Bucket=bucket_name, Key=test_filename)
+
+if __name__ == '__main__':
     
     got_cities = ["King's Landing"
                  ,"Braavos"
@@ -43,25 +71,24 @@ if __name__ == '__main__':
                  ,"Oros"
                  ,"Norvos"]
 
-    clean_dict = {'datetime_cols': ['signup_time_utc', 'last_order_time_utc']
-                 ,'target_column': 'last_order_time_utc'
-                 ,'days_to_churn': 30
-                 ,'city_column': 'city_name'
-                 ,'fake_cities': got_cities
-                 }
+    churn_days = [30, 45, 60, 90]
+
+    for churn_day in churn_days:
+
+        params = {'churn_days': churn_day}
+        churn_query_id = 714507
+        api_key = os.environ['REDASH_API_KEY']
+        query_url = os.environ['REDASH_LINK']
     
-    churn_data.clean_data(clean_dict)
+        churn_data = Query_results(query_url, churn_query_id, api_key, params)
 
-    churn_data_Xy = pd.concat([churn_data.df, churn_data.target], axis=1)
-    churn_train, churn_test = train_test_split(churn_data_Xy, test_size=0.2, shuffle=True, stratify=churn_data.target)
+        clean_dict = {'datetime_cols': ['signup_time_utc', 'last_order_time_utc']
+                    ,'target_column': 'last_order_time_utc'
+                    ,'days_to_churn': churn_day
+                    ,'city_column': 'city_name'
+                    ,'fake_cities': got_cities
+                    }
 
-    churn_train.to_csv('churn_train.csv', index=False)
-    churn_test.to_csv('churn_test.csv', index=False)
+        print(f"Cleaning and storing {churn_day} day data")
+        clean_store_data(churn_data, clean_dict, 'food-delivery-churn')
 
-    aws_id = os.environ['AWS_ACCESS_KEY_ID']
-    aws_secret = os.environ['AWS_SECRET_ACCESS_KEY']
-    client = boto3.client('s3'
-                         ,aws_access_key_id=aws_id
-                         ,aws_secret_access_key=aws_secret)
-    client.upload_file(Filename='churn_train.csv', Bucket='food-delivery-churn', Key='churn_train.csv')
-    client.upload_file(Filename='churn_test.csv', Bucket='food-delivery-churn', Key='churn_test.csv')
