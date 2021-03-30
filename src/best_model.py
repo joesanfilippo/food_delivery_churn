@@ -8,12 +8,19 @@ font = {'weight': 'bold'
 plt.rc('font', **font)
 from matplotlib.ticker import PercentFormatter, StrMethodFormatter
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.inspection import plot_partial_dependence
 from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve, f1_score
 from collections import OrderedDict
 
+
 if __name__ == '__main__':
 
-    X_train, X_test, y_train, y_test = load_X_y('food-delivery-churn', 30)
+    bucket_name = 'food-delivery-churn'
+    filename = 'original_churn'
+    is_feature_selection = False
+    feature_list = []
+
+    X_train, X_test, y_train, y_test = load_X_y(bucket_name, filename, is_feature_selection, feature_list)
 
     churn_model = Churn_Model(GradientBoostingClassifier(), 30, (X_train, X_test, y_train, y_test))
     churn_model.convert_cat_to_int()
@@ -36,3 +43,11 @@ if __name__ == '__main__':
     print("|--------------------------------|--------------| ")
     for feature in sorted(feature_dict, key=feature_dict.__getitem__, reverse=True):
         print(f"| {feature.replace('_', ' ').title()} | {feature_dict[feature]:.1%} |")
+
+    my_plot = plot_partial_dependence(best_model
+                                    ,features=[i for i in range(0,len(X_train.columns.tolist()))]
+                                    ,X=X_train
+                                    ,n_cols=4
+                                    ,feature_names=X_train.columns.tolist()
+                                    ,grid_resolution=10)
+    plt.show()

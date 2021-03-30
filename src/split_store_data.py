@@ -4,7 +4,7 @@ import pandas as pd
 from clean_data import Query_results
 from sklearn.model_selection import train_test_split
 
-def clean_store_data(churn_data, clean_dict, bucket_name):
+def clean_store_data(churn_data, clean_dict, bucket_name, filename):
     """ Clean and store data in AWS bucket for later analysis
     Args:
         churn_data (Query_results): A Query_results object ready to be cleaned
@@ -25,8 +25,8 @@ def clean_store_data(churn_data, clean_dict, bucket_name):
     churn_data_Xy = pd.concat([churn_data.df, churn_data.target], axis=1)
     churn_train, churn_test = train_test_split(churn_data_Xy, test_size=0.2, shuffle=True, stratify=churn_data.target)
 
-    train_filename = f"churn_{clean_dict['days_to_churn']}_train.csv"
-    test_filename = f"churn_{clean_dict['days_to_churn']}_test.csv"
+    train_filename = f"{filename}_train.csv"
+    test_filename = f"{filename}_test.csv"
 
     churn_train.to_csv(train_filename, index=False)
     churn_test.to_csv(test_filename, index=False)
@@ -71,24 +71,20 @@ if __name__ == '__main__':
                  ,"Oros"
                  ,"Norvos"]
 
-    churn_days = [30, 45, 60, 90]
+    params = {}
+    churn_query_id = 714507
+    api_key = os.environ['REDASH_API_KEY']
+    query_url = os.environ['REDASH_LINK']
 
-    for churn_day in churn_days:
+    churn_data = Query_results(query_url, churn_query_id, api_key, params)
 
-        params = {'churn_days': churn_day}
-        churn_query_id = 714507
-        api_key = os.environ['REDASH_API_KEY']
-        query_url = os.environ['REDASH_LINK']
-    
-        churn_data = Query_results(query_url, churn_query_id, api_key, params)
+    clean_dict = {'datetime_cols': ['signup_time_utc', 'last_order_time_utc']
+                ,'target_column': 'last_order_time_utc'
+                ,'days_to_churn': 30
+                ,'city_column': 'city_name'
+                ,'fake_cities': got_cities
+                }
 
-        clean_dict = {'datetime_cols': ['signup_time_utc', 'last_order_time_utc']
-                    ,'target_column': 'last_order_time_utc'
-                    ,'days_to_churn': churn_day
-                    ,'city_column': 'city_name'
-                    ,'fake_cities': got_cities
-                    }
-
-        print(f"Cleaning and storing {churn_day} day data")
-        clean_store_data(churn_data, clean_dict, 'food-delivery-churn')
+    print(f"Cleaning and storing data...")
+    clean_store_data(churn_data, clean_dict, 'food-delivery-churn', 'original_churn')
 

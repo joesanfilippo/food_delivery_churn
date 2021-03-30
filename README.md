@@ -56,18 +56,32 @@ Most of my data cleaning occurred when I was writing the query itself, which inc
 * Calculating 30 day and last order metrics
 
 ## EDA
+My first step in EDA was to look at how churned and active user profiles differ along continuous and categorical predictors. In order to visualize their differences, I decided to use Kernel Density Estimates (KDE) plots for continuous variables and 100% Fill Bar Charts for categorical variables.
 
 ### KDE Plots for Continuous Features
+KDE plots help highlight the difference in concentrations between two groups by how much of their density is around a certain value. In the Days Since Signup plot, you can see there is a higher concentration of Active Users in the lower range of days. This means that users who have signed up for the platform more recently are less likely to be churned users. The opposite is therefore true for Churned Users and the higher range of days.
+![30 Day KDE Plots](images/kde_plots.png)
 
-### 100% Bar Charts for Categorical Features
+### 100% Fill Bar Charts for Categorical Features
+100% Fill Bar Charts can highlight differences in the percent of users who are churned or active across non-numerical features. Unfortunately by using the percent of users, you lose the overall size of the cohorts you are comparing so I added a second Y-axis that highlights the overall size. The higher the black line, the larger that group will be compared to other groups in the same feature.
 
-### Comparing 30, 60, 90 days for Churn Prediction
+Looking at the percent of active and churned users by City, you can see that on the edges there is a high percent of either active or churned users, but both have relative low overall size. The city with the highest number of users (Pentos) falls somewhere in the middle in terms of percent of churn users. The small differences between the cities in the middle of the chart (where most users are) tells us that this probably will not be a great predictor of whether or not a user will churn.
 
-![ROC AUC Score for 30,45,60,90](images/roc_curves.png)
+![30 Day Barcharts](images/barchart_plots.png)
+
+Next, I wanted to see if changing the number of days before we considered a user as churned helped create separation between the two classes. While I initially set the number of days to 30, I also looked at 60 and 90 days. The ROC-AUC scores for their best performing models are listed in the table below:
+
+| Best Classifier     |   30 Days  | 60 Days    | 90 Days    |
+|---------------------|------------|------------|------------|
+| Logistic Regression | 0.724      | 0.726      | 0.733      |
+| Random Forest       | 0.776      | 0.764      | 0.768      |
+| Gradient Boosting   | 0.786      | 0.776      | 0.790      |
+
+As you can see, there is very little difference in the best performing Gradient Boosting Classifier from 30 days to 60 or 90 days. Since using a higher number of days doesn't create any better separation, I decided to keep the number of days to churn as 30.
 
 ## Model Tuning & Performance
 
-After determining my best model, I wanted to look at which features it determined were most important:
+In order to determine the best classifier to use along with the optimal hyperparameters, I used a combination of `GridSearchCV` on the Logistic Regression classifier and `RandomizedSearchCV` on the Random Forest and Gradient Boosting classifers. 
 
 | Feature                        | Importance % |
 |--------------------------------|--------------|
@@ -97,6 +111,8 @@ After determining my best model, I wanted to look at which features it determine
 | First Order Delivered On Time | 0.1% |
 
 ## Model and Threshold Selection
+
+![F1 Score and Profit Curve](images/profit_and_f1_curves.png)
 
 ## Conclusions
 

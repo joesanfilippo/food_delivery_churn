@@ -13,13 +13,11 @@ from matplotlib.ticker import PercentFormatter, StrMethodFormatter
 
 class EDA_Plot(object):
 
-    def __init__(self, churn_days, bucket_name, train_filename):
+    def __init__(self, bucket_name, train_filename):
         """ Initialize an instance of the EDA_Plot class that will be used to plot categorical and continuous 
            predictors to use in the machine learning models.
         
         Args: 
-            churn_days (int): The number of churn days to use for analysis. Comes from the split_store_data.py 
-                              script.
             bucket_name (str): The name of the AWS S3 bucket to pull the training data from.
             train_filename (str): The name of the training data csv to pull from the AWS S3 Bucket.
 
@@ -27,8 +25,6 @@ class EDA_Plot(object):
             None
             Instantiates a EDA_Plot class
         """
-        self.churn_days = churn_days
-
         aws_id = os.environ['AWS_ACCESS_KEY_ID']
         aws_secret = os.environ['AWS_SECRET_ACCESS_KEY']
         client = boto3.client('s3'
@@ -85,8 +81,8 @@ class EDA_Plot(object):
             fig.delaxes(axs[np.ceil(len(continuous_columns)/2).astype(int)-1, 1])
 
         plt.tight_layout(rect=(0,0,1,0.98))
-        plt.suptitle(f"KDE Plots for Continuous Predictors {self.churn_days} Day Churn", y=0.99, fontsize=35)
-        plt.savefig(f"images/kde_plots_{self.churn_days}.png")
+        plt.suptitle(f"KDE Plots for Continuous Predictors", y=0.99, fontsize=35)
+        plt.savefig(f"images/kde_plots.png")
 
     def bar_categorical_plot(self, cat_df, cat_col, ax):
         """ Plots a 100% Fill Stacked Barchart of Churned vs Active users using the values passed.
@@ -139,19 +135,18 @@ class EDA_Plot(object):
             self.bar_categorical_plot(categorical_data, col, ax)
 
         plt.tight_layout(rect=(0,0,1,0.98))
-        plt.suptitle(f"100% Fill Barchart for Categorical Predictors {self.churn_days} Day Churn", y=0.99, fontsize=35)
-        plt.savefig(f"images/barchart_plots_{self.churn_days}.png")
+        plt.suptitle(f"100% Fill Barchart for Categorical Predictors", y=0.99, fontsize=35)
+        plt.savefig(f"images/barchart_plots.png")
 
 if __name__ == '__main__':
     
     bucket_name = 'food-delivery-churn'
+    train_filename = 'original_churn_train.csv'
     
-    churn_days = [30, 45, 60, 90]
-
-    for churn_day in churn_days:
-        train_filename = f"churn_{churn_day}_train.csv"
-        churn_eda = EDA_Plot(churn_day, bucket_name, train_filename)
-        print(f"Plotting {churn_day} Day Continuous Features")
-        churn_eda.plot_continuous_features()
-        print(f"Plotting {churn_day} Day Categorical Features")
-        churn_eda.plot_categorical_features()
+    churn_eda = EDA_Plot(bucket_name, train_filename)
+    
+    print(f"Plotting Continuous Features...")
+    churn_eda.plot_continuous_features()
+    
+    print(f"Plotting Categorical Features...")
+    churn_eda.plot_categorical_features()
