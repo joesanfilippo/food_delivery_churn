@@ -12,7 +12,7 @@ from matplotlib.ticker import PercentFormatter, StrMethodFormatter
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
-from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve
+from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve, f1_score
 
 class Churn_Model(object):
 
@@ -107,16 +107,16 @@ class Churn_Plot(object):
         self.y_test = test_dict['y'][self.churn_days]
         self.y_probs = self.classifier.predict_proba(self.X_test)[:,1] 
 
-    def plot_model_aoc(self, ax, plot_kwargs={}):
-        """ Plots the AOC Curve for a classifier given the test data and axis
+    def plot_model_roc(self, ax, plot_kwargs={}):
+        """ Plots the ROC Curve for a classifier given the test data and axis
         Args:
             classifier (Sklearn Classifier): The best classifier to test against other classifiers
-            ax (matplotlib axis): An axis to plot the AOC curve on.
+            ax (matplotlib axis): An axis to plot the ROC curve on.
             plot_kwargs (dict): Keyword arguments to pass to the plot for formatting
 
         Returns: 
             None
-            Modifies ax by plotting the AOC curve from the best classifier.
+            Modifies ax by plotting the ROC curve from the best classifier.
         """
         auc_score = roc_auc_score(self.y_test, self.y_probs)
         fpr, tpr, threshold = roc_curve(self.y_test, self.y_probs)
@@ -134,7 +134,7 @@ class Churn_Plot(object):
             profit_list (list): 
             threshold_list (list):
         """
-        thresholds = np.linspace(1,0,101)
+        thresholds = np.linspace(0,1,101)
         idx_list = []
         profit_list = []
         threshold_list = []
@@ -149,13 +149,13 @@ class Churn_Plot(object):
         
         return idx_list, profit_list, threshold_list
 
-    def plot_profit_curve(self, ax, plot_kwargs={}, tp_cost=1.54, fp_cost=-0.75):
+    def plot_profit_curve(self, ax, plot_kwargs={}, tp_cost=8.42, fp_cost=-5.43):
         """ Plots the Profit Curve for a classifier given an ax and plot_kwargs
         Args:
-            ax (matplotlib axis)
-            plot_kwargs (dict)
-            tp_cost (float)
-            fp_cost (float)
+            ax (matplotlib axis): The axis to plot the best classifier's F1 score curve.
+            plot_kwargs (dict): Keyword arguments to visually separate the best classifiers.
+            tp_cost (float): The cost of correctly predicted a positive class
+            fp_cost (float): The cost a incorrectly predicting a positive class
 
         Returns:
             None
@@ -163,12 +163,41 @@ class Churn_Plot(object):
         """
         x_axis, y_axis, thresholds = self.calc_profit_curve(tp_cost, fp_cost)
 
-        max_profit = max(y_axis)
+        max_profit = max(y_axis) / len(self.X_test)
         max_profit_line = x_axis[y_axis.index(max(y_axis))]
         classifier_name = self.classifier.__class__.__name__
 
-        ax.plot(x_axis, y_axis, label=f'{classifier_name}', **plot_kwargs)
-        ax.axvline(x=max_profit_line, label=f'Max Profit = {max_profit}', **plot_kwargs)
+        ax.plot(x_axis, y_axis, label=f"{classifier_name} Profit per User: ${max_profit:.2f}", **plot_kwargs)
+        ax.axvline(x=max_profit_line, label=f"Max Profit Threshold: {max_profit_line}", **plot_kwargs)
+
+    def plot_f1_curve(self, ax, plot_kwargs={}):
+        """ Plots the F1 Score Curve for a classifier given an ax and plot_kwargs
+        Args:
+            ax (matplotlib axis): The axis to plot the best classifier's F1 score curve.
+            plot_kwargs (dict): Keyword arguments to visually separate the best classifiers.
+            
+        Returns:
+            None
+            Modifies the ax to show the F1 Score curve for best classifier
+        """
+        thresholds = np.linspace(0,1,101)
+        threshold_list = []
+        f1_list = []
+
+        for threshold in thresholds:
+            y_preds = (self.y_probs >= threshold).astype(int)
+            f1 = f1_score(self.y_test, y_preds)
+            f1_list.append(f1)
+            threshold_list.append(threshold)
+
+        max_f1_score = max(f1_list)
+        max_threshold = threshold_list[f1_list.index(max(f1_list))]
+        classifier_name = self.classifier.__class__.__name__
+
+        ax.plot(threshold_list, f1_list, label=f"{classifier_name} F1 Score: {max_f1_score:.1%}", **plot_kwargs)
+        ax.axvline(x=max_threshold
+                  ,label=f'Ideal Threshold: {max_threshold:.1%}', **plot_kwargs)
+
 
 def load_X_y(bucket_name, churn_day, is_feature_selection=False, feature_list=[]):
     """ Loads the X & y training & test data from AWS Bucket
@@ -232,7 +261,7 @@ if __name__ == '__main__':
     test_dict = {'X': {}
                  ,'y': {}}
 
-    churn_days = [30, 45, 60, 90]
+    churn_days = [30, 60, 90]
 
     for churn_day in churn_days:
         
@@ -266,9 +295,9 @@ if __name__ == '__main__':
                                 ,'max_features': ['sqrt', 'log2', None]
                                 ,'n_estimators': [5,10,25,50,100,200,250]}
         
-        lr_model.fit_model(logistic_regression_grid, GridSearchCV, 'accuracy')
-        rf_model.fit_model(random_forest_grid, RandomizedSearchCV, 'accuracy')
-        gb_model.fit_model(gradient_boosting_grid, RandomizedSearchCV, 'accuracy')
+        lr_model.fit_model(logistic_regression_grid, GridSearchCV, 'roc_auc')
+        rf_model.fit_model(random_forest_grid, RandomizedSearchCV, 'roc_auc')
+        gb_model.fit_model(gradient_boosting_grid, RandomizedSearchCV, 'roc_auc')
         
         model_dict['logistic_regression'][churn_day] = lr_model.best_model
         model_dict['random_forest'][churn_day] = rf_model.best_model
@@ -284,41 +313,49 @@ if __name__ == '__main__':
     classifier_types = ['logistic_regression', 'random_forest', 'gradient_boosting']
     classifier_plot_kwargs = [lr_plot_kwargs, rf_plot_kwargs, gb_plot_kwargs]
 
-    fig, axs = plt.subplots(nrows=2, ncols=2, figsize=(25,16))
+    fig, axs = plt.subplots(nrows=3, figsize=(15,38))
 
     for ax, churn_day in zip(axs.flatten(), churn_days):
         
         for classifier_type, kwargs in zip(classifier_types, classifier_plot_kwargs):
             
             model_plot = Churn_Plot(model_dict, test_dict, classifier_type, churn_day)
-            model_plot.plot_model_aoc(ax, kwargs)             
+            model_plot.plot_model_roc(ax, kwargs)             
     
         ax.legend(loc='lower right')
         ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
         ax.xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
         ax.set_xlabel("False Positivity Rate")
         ax.set_ylabel("True Positivity Rate")
-        ax.set_title(f"ROC Curve for Best Classifiers {churn_day} Day Churn")                                                                    
+        ax.set_title(f"{churn_day} Day Churn")                                                                    
     
-    # plt.show()
+    plt.suptitle("ROC Curves for Best Classifiers", y=0.95, fontsize=30)
     plt.savefig(f"images/roc_curves.png")
 
-    fig, axs = plt.subplots(nrows=2, ncols=2, figsize=(25,16))
-
-    for ax, churn_day in zip(axs.flatten(), churn_days):
-        
-        for classifier_type, kwargs in zip(classifier_types, classifier_plot_kwargs):
-            
-            model_plot = Churn_Plot(model_dict, test_dict, classifier_type, churn_day)
-            model_plot.plot_profit_curve(ax, kwargs)             
+    fig, axs = plt.subplots(nrows=2, figsize=(15,25))
     
-        ax.legend(loc='lower right')
-        ax.set_title(f"Profit Curve for Best Classifiers {churn_day} Day Churn")                                                                    
-        ax.set_xlabel("Threshold Percent")
-        ax.set_ylabel("Profit ($) on 32k Users")
-        threshold_labels = ['100%', '80%', '60%', '40%', '20%', '0%']
-        ax.set_xticks(np.arange(0, 101, step=20))
-        ax.set_xticklabels(threshold_labels)
+    for classifier_type, kwargs in zip(classifier_types, classifier_plot_kwargs):
         
-    # plt.show()
-    plt.savefig(f"images/profit_curves.png")
+        model_plot = Churn_Plot(model_dict, test_dict, classifier_type, 30)
+        model_plot.plot_f1_curve(axs[0], kwargs)             
+        model_plot.plot_profit_curve(axs[1], kwargs)
+    
+    axs[0].legend(loc='best')
+    axs[0].set_title(f"F1 Curves for Best Classifiers")                                                                    
+    axs[0].set_xlabel(f"Threshold Percent")
+    axs[0].set_ylabel(f"F1 Score")
+    axs[0].xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+    axs[0].yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+
+    axs[1].legend(loc='lower right')
+    axs[1].set_title("Profit Curves for Best Classifiers")                                                                    
+    axs[1].set_xlabel(f"Threshold Percent")
+    axs[1].set_ylabel(f"Profit ($) on {round(len(test_dict['X'][churn_day])/1000,0)}k Users")
+    axs[1].xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+    # threshold_labels = ['100%', '80%', '60%', '40%', '20%', '0%']
+    # axs[1].set_xticks(np.arange(0, 101, step=20))
+    # axs[1].set_xticklabels(threshold_labels)
+    
+    plt.suptitle("Comparing Best Classifiers", y=0.93, fontsize=30)
+    plt.tight_layout()
+    plt.savefig(f"images/profit_and_f1_curves.png")
