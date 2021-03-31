@@ -36,7 +36,7 @@ class Query_results(object):
         self.df = pd.DataFrame(self.results)
 
     def clean_columns(self):
-        """ Replaces column names that have ' ' with _ and lowers all the column names to all lowercase letters.
+        """ Replaces column names that have ' ' with _ and changes all the column names to all lowercase letters.
         Args:
             self (Query_results): A class of Query_results with self.df populated
 

@@ -255,6 +255,7 @@ if __name__ == '__main__':
                             ,'fit_intercept': [True, False]
                             ,'class_weight': [None, 'balanced']
                             ,'solver': ['liblinear']
+                            ,'max_iter': [50,100,200,500]
                             }
     
     random_forest_grid = {'max_depth': [2, 4, 8]
@@ -298,6 +299,7 @@ if __name__ == '__main__':
     ax.set_ylabel("True Positivity Rate")
     ax.set_title(f"ROC Curve for Best Classifiers")                                                                    
     
+    plt.tight_layout()
     plt.savefig(f"images/original_roc_curves.png")
 
     fig, axs = plt.subplots(nrows=2, figsize=(15,25))
