@@ -17,7 +17,7 @@ from collections import OrderedDict
 if __name__ == '__main__':
 
     bucket_name = 'food-delivery-churn'
-    filename = 'boolean_churn'
+    filename = 'weekend_churn'
     is_feature_selection = False
     feature_list = []
 
@@ -37,26 +37,24 @@ if __name__ == '__main__':
     X_train['lr_predictions'] = best_lr.predict_proba(X_train)[:,1]
     X_test['lr_predictions'] = best_lr.predict_proba(X_test)[:,1]
 
-    best_model = GradientBoostingClassifier(subsample=0.25
+    best_model = GradientBoostingClassifier(subsample=0.75
                                            ,n_estimators=200
-                                           ,min_samples_leaf=2
+                                           ,min_samples_leaf=1
                                            ,max_features=None
-                                           ,max_depth=8
-                                           ,learning_rate=0.05)
+                                           ,max_depth=2
+                                           ,learning_rate=0.25)
 
     best_model.fit(X_train, y_train)
-
-    print(best_model.score(X_test, y_test))
-
+    print(roc_auc_score(y_test, best_model.predict_proba(X_test)[:,1]))
     
-    # feature_dict = {}
-    # for feature, importance in zip(X_test.columns, best_model.feature_importances_):
-    #     feature_dict[feature] = importance
+    feature_dict = {}
+    for feature, importance in zip(X_test.columns, best_model.feature_importances_):
+        feature_dict[feature] = importance
 
-    # print("| Feature                        | Importance % |  ")
-    # print("|--------------------------------|--------------| ")
-    # for feature in sorted(feature_dict, key=feature_dict.__getitem__, reverse=True):
-    #     print(f"| {feature.replace('_', ' ').title()} | {feature_dict[feature]:.1%} |")
+    print("| Feature                        | Importance % |  ")
+    print("|--------------------------------|--------------| ")
+    for feature in sorted(feature_dict, key=feature_dict.__getitem__, reverse=True):
+        print(f"| {feature.replace('_', ' ').title()} | {feature_dict[feature]:.1%} |")
 
     # my_plot = plot_partial_dependence(best_model
     #                                 ,features=[i for i in range(0,len(X_train.columns.tolist()))]

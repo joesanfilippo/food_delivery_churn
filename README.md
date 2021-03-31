@@ -19,36 +19,33 @@ The features I pulled included:
 | Feature Name                   | Data Type | Description |
 |--------------------------------|-----------|-------------|
 | city_name                      | String    | The city the user placed their first order in. Changed to protect the company's identity and data. |
-| city_group                     | String    | One of `college town` or `city` based on the city's population size and presence of a university. |
 | signup_time_utc                | DateTime  | The date and time the user signed up on the platform in Coordinated Universal Time. |
-| is_foreign_user                | Boolean   | Whether or not the user is domestic to the US. |
-| acquisition_category           | String    | The acquisition channel a user signed up through (Referrals, Digital Ads, Social Media, etc). |
-| acquisition_subcategory        | String    | The acquisition channel's subcategory a user signed up through (Facebook, Snapchat, In-restaurant promotions, etc). |
-| language                       | String    | The user selected language they prefer. Can be Unknown is not-selected. |
+| acquisition_channel            | String    | The acquisition channel a user signed up through (Facebook, Snapchat, In-restaurant promotions, emails, etc). |
 | last_order_time_utc            | DateTime  | The date and time of the user's last order on the platform in Coordinated Universal Time. **This is used to calculate the positive and negative class.**|
-| signup_to_order_hours          | Float     | The number of hours between signing up and a user's first order. |
 | days_since_signup              | Integer   | The number of days since a user has signed up. |
-| first_order_driver_rating      | Integer   | The optional rating a user gave their courier on their first order. Can be -1 if there was no rating. |
+| signup_to_order_hours          | Float     | The number of hours between signing up and a user's first order. |
+| first_order_driver_rating      | Integer   | The optional rating a user gave their driver on their first order. Can be -1 if there was no rating. |
 | first_order_avg_meal_rating    | Float     | The optional average rating a user gave their meals on their first order. Can be -1 if there were no ratings. An order can have multiple meals included. |
-| first_order_median_meal_rating | Float     |The optional median rating a user gave their meals on their first order. Can be -1 if there were no ratings. An order can have multiple meals included.|
+| first_order_meal_reviews       | Integer   | The number of meal reviews that a user rated during their first order. An order can have multiple meals included. |
 | first_order_delivered_on_time  | Boolean   | Whether or not a user's first order was delivered by the time promised in the app. |
 | first_order_hours_late         | Float     | The number of hours late a user's first order was delivered. If an order was delivered on time, this equals 0. |
 | first_order_gmv                | Float     | The Gross Merchandise Value (in USD) of a user's first order. This is the total cost of an order, including things like taxes, fees, and tips. |
-| first_order_payment            | Float     | The amount a user paid the Company on their first order (in USD). This is net of the promos or discounts a user was offered. |
-| first_order_discount_amount    | Float     | The difference between the GMV and an order payment (in USD). This is equal to any promos or discounts a user was offered. |
 | first_order_discount_percent   | Float     | The % of the GMV that was discounted on a user's first order |
-| first_order_meal_reviews       | Integer   | The number of meal reviews that a user rated during their first order. An order can have multiple meals included. |
+| first_order_driver_tips        | Float     | The amount a user tipped a driver on their first order |
 | first_30_day_orders            | Integer   | The number of orders a user placed during their first 30 days after their first order. |
-| first_30_day_avg_meal_rating   | Float     | The average meal rating for all the orders a user placed during their first 30 days after their first order. |
 | first_30_day_avg_driver_rating | Float     | The average driver rating for all the orders a user placed during their first 30 days after their first order. |
+| first_30_day_avg_meal_rating   | Float     | The average meal rating for all the orders a user placed during their first 30 days after their first order. |
 | first_30_day_avg_gmv           | Float     | The average GMV (in USD) for all the orders a user placed during their first 30 days after their first order. |
 | first_30_day_discount_percent  | Float     | The average discount percent for all the orders a user placed during their first 30 days after their first order. |
+| first_30_day_avg_driver_tips   | Float     | The average amount a user tipped a driver for all the orders a user placed during their first 30 days after their first order. |
 | first_30_day_subscription_user | Boolean   | Whether or not a user was a subscription user during their first 30 days. |
+| first_30_day_support_messages  | Int       | The number of customer support messages a user sent Company X during their first 30 days. Can be -1 if there were no support messages. |
 
 Before starting my EDA, I needed to separate out a holdout dataset that I would use to test the performance of my best classifiers. I shuffled the data, stratified based on my target class, and then split out 20% to hold back for testing purposes.
 
 ### Data Cleaning
 Most of my data cleaning occurred when I was writing the query itself, which included:
+
 * Grouping cities into `College Town` town or `City`
 * Converting local currencies to USD
 * Filtering for only completed orders
@@ -96,8 +93,8 @@ My first step in determining the best classifier to use was to iterate through v
     <tbody>
         <tr>
             <td rowspan=5>Logisitic Regression</td>
-            <td>`penalty`</td>
-            <td>['l1', 'l2']</td>
+            <td>penalty</td>
+            <td>[l1, l2]</td>
         </tr>
         <tr>
             <td>fit_intercept</td>
@@ -105,11 +102,11 @@ My first step in determining the best classifier to use was to iterate through v
         </tr>
         <tr>
             <td>class_weight</td>
-            <td>[None, 'Balanced']</td>
+            <td>[None, Balanced]</td>
         </tr>
         <tr>
             <td>solver</td>
-            <td>['liblinear']</td>
+            <td>[liblinear]</td>
         </tr>
         <tr>
             <td>max_iter</td>
@@ -122,7 +119,7 @@ My first step in determining the best classifier to use was to iterate through v
         </tr>
         <tr>
             <td>max_features</td>
-            <td>['sqrt', 'log2', None]</td>
+            <td>[sqrt, log2, None]</td>
         </tr>
         <tr>
             <td>min_samples_leaf</td>
@@ -151,7 +148,7 @@ My first step in determining the best classifier to use was to iterate through v
         </tr>
         <tr>
             <td>max_features</td>
-            <td>['sqrt', 'log2', None]</td>
+            <td>[sqrt, log2, None]</td>
         </tr>
         <tr>
             <td>min_samples_leaf</td>
@@ -168,13 +165,13 @@ My first step in determining the best classifier to use was to iterate through v
     </tbody>
 </table>
 
-After each iteration of finding the optimal hyperparameters, I took the results from the best model of predicting the probability of the positive class and added it to my features for training the next classifier. This had significant improvements on the Random Forest and Gradient Boosting classifiers.
+After finding the optimal hyperparameters for my Logistic Regression classifier, I took the results from the best model of predicting the probability of the positive class and added it to my features for training the Random Forest and Gradient Boosting classifiers.
 
-I decided to use the ROC AUC score to compare my models and plotting each one against the other. My best model achieved an AUC score of 0.XX on unseen data.
+I decided to use the ROC AUC score to compare my models and plotted each one against the other. My best model used the Gradient Boosting classifier and achieved an AUC score of 0.78 on unseen data.
 
 ![ROC Curve](images/original_roc_curves.png)
 
-Next, I wanted to look at which features contributed most to my model by comparing their feature importances. On the left side of the table are my feature importances using the original dataset. After looking at these and comparing them to the KDE plots, I realized it might not matter what rating you give a meal or driver so much as IF you gave either a rating. I re-engineered my features to change ratings from int/float to booleans and re-ran the feature importances, also removing less important features like City Group, Subscription User, First Order Delivered On-Time, and Foreign User.
+Next, I wanted to look at which features contributed most to my best model by comparing their feature importances. On the left side of the table are my feature importances using the original dataset. After looking at these and comparing them to the KDE plots, I realized it might not matter what rating you give a meal or driver so much as IF you gave either a rating. I re-engineered my features to change ratings from int/float to booleans and re-ran the feature importances, also removing less important features like City Group, Subscription User, First Order Delivered On-Time, and Foreign User.
 
 <table>
 <tr><th> Original Dataset </th> <th> Boolean Dataset </th></tr>
@@ -233,8 +230,11 @@ Next, I wanted to look at which features contributed most to my model by compari
 </td></tr>
 </table>
 
+Overall, using this Boolean feature set instead of my original one, I was able to drop 6 features and convert 6 others to boolean values while still maintaining a 0.78 AUC ROC score.
 
 ## Model and Threshold Selection
+
+Now that I had my best model for predicting the probability that a user will churn, I wanted to see what threshold for probability is optimal to determine our positive and negative class. In order to do this, I used an F1 score which balances the importance of a False Positive and a False Negative as well as a Profit Curve which takes into account the cost of predicting True Positives and False Positives.
 
 ![F1 Score and Profit Curve](images/original_profit_and_f1_curves.png)
 

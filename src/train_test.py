@@ -29,6 +29,7 @@ class Churn_Model(object):
             Instantiates a Churn_Model class 
         """
         self.classifier = classifier 
+        self.classifier_name = self.classifier.__class__.__name__
         self.X_train, self.X_test, self.y_train, self.y_test = split_data
         
     def convert_cat_to_int(self):
@@ -73,14 +74,31 @@ class Churn_Model(object):
 
         self.model_search.fit(self.X_train, self.y_train)
 
-        classifier_name = self.classifier.__class__.__name__
-
-        print(f"Best Parameters for {classifier_name}: {self.model_search.best_params_}")
-        print(f"Best {scoring_type} Score for {classifier_name}: {self.model_search.best_score_:.4f}")
+        print(f"Best Parameters for {self.classifier_name}: {self.model_search.best_params_}")
+        print(f"Best {scoring_type} Training Score for {self.classifier_name}: {self.model_search.best_score_:.4f}")
 
         self.best_model = self.model_search.best_estimator_
         self.y_train_probs = self.best_model.predict_proba(self.X_train)[:,1] 
         self.y_test_probs = self.best_model.predict_proba(self.X_test)[:,1] 
+
+    def print_feature_importances(self):
+        """ Plots the ROC Curve for a classifier given the test data and axis
+        Args:
+            self (Churn_Model class)
+
+        Returns: 
+            None
+            Prints a sorted table of features by their importance.
+        """
+        feature_dict = {}
+        for feature, importance in zip(self.X_test.columns, self.best_model.feature_importances_):
+            feature_dict[feature] = importance
+        
+        print(f"Feature Importances for {self.classifier_name}")
+        print("| Feature                        | Importance % |  ")
+        print("|--------------------------------|--------------| ")
+        for feature in sorted(feature_dict, key=feature_dict.__getitem__, reverse=True):
+            print(f"| {feature.replace('_', ' ').title()} | {feature_dict[feature]:.1%} |")
 
     def plot_model_roc(self, ax, plot_kwargs={}):
         """ Plots the ROC Curve for a classifier given the test data and axis
@@ -96,7 +114,7 @@ class Churn_Model(object):
         auc_score = roc_auc_score(self.y_test, self.y_test_probs)
         fpr, tpr, threshold = roc_curve(self.y_test, self.y_test_probs)
         roc_df = pd.DataFrame(zip(fpr, tpr, threshold), columns = ['fpr', 'tpr', 'threshold'])
-        ax.plot(roc_df.fpr, roc_df.tpr, label=f"{self.best_model.__class__.__name__} AUC={auc_score:.3f}", **plot_kwargs)
+        ax.plot(roc_df.fpr, roc_df.tpr, label=f"{self.classifier_name} AUC={auc_score:.3f}", **plot_kwargs)
     
     def calc_profit_curve(self, tp_cost, fp_cost):
         """ Calculates the profit for a range of thresholds given the true and false positive costs.
@@ -137,9 +155,8 @@ class Churn_Model(object):
 
         max_profit = max(y_axis) / len(self.X_test)
         max_profit_line = x_axis[y_axis.index(max(y_axis))]
-        classifier_name = self.best_model.__class__.__name__
-
-        ax.plot(x_axis, y_axis, label=f"{classifier_name} Profit per User: ${max_profit:.2f}", **plot_kwargs)
+    
+        ax.plot(x_axis, y_axis, label=f"{self.classifier_name} Profit per User: ${max_profit:.2f}", **plot_kwargs)
         ax.axvline(x=max_profit_line, label=f"Max Profit Threshold: {max_profit_line:.0%}", **plot_kwargs)
 
     def plot_f1_curve(self, ax, plot_kwargs={}):
@@ -164,9 +181,8 @@ class Churn_Model(object):
 
         max_f1_score = max(f1_list)
         max_threshold = threshold_list[f1_list.index(max(f1_list))]
-        classifier_name = self.best_model.__class__.__name__
-
-        ax.plot(threshold_list, f1_list, label=f"{classifier_name} F1 Score: {max_f1_score:.1%}", **plot_kwargs)
+        
+        ax.plot(threshold_list, f1_list, label=f"{self.classifier_name} F1 Score: {max_f1_score:.1%}", **plot_kwargs)
         ax.axvline(x=max_threshold
                   ,label=f'Ideal Threshold: {max_threshold:.0%}', **plot_kwargs)
 
@@ -226,7 +242,7 @@ if __name__ == '__main__':
                             }
     lr_model.convert_cat_to_int()
     lr_model.fit_model(logistic_regression_grid, GridSearchCV, 'roc_auc')
-     
+    
     rf_model = Churn_Model(RandomForestClassifier(), split_data)
     random_forest_grid = {'max_depth': [2, 4, 8]
                         ,'max_features': ['sqrt', 'log2', None]
@@ -235,7 +251,8 @@ if __name__ == '__main__':
                         ,'bootstrap': [True, False]
                         ,'n_estimators': [5,10,25,50,100,200]}
     rf_model.fit_model(random_forest_grid, RandomizedSearchCV, 'roc_auc')
-    
+    rf_model.print_feature_importances()
+
     split_data[0]['lr_predictions'] = lr_model.y_train_probs
     split_data[1]['lr_predictions'] = lr_model.y_test_probs
     
@@ -245,12 +262,13 @@ if __name__ == '__main__':
                             ,'max_features': ['sqrt', 'log2', None]
                             ,'min_samples_leaf': [1, 2, 4]
                             ,'subsample': [0.25, 0.5, 0.75, 1.0]
-                            ,'n_estimators': [5,10,25,50,100,200,250]}
+                            ,'n_estimators': [5,10,25,50,100,200]}
     gb_model.fit_model(gradient_boosting_grid, RandomizedSearchCV, 'roc_auc')
+    gb_model.print_feature_importances()
 
     lr_plot_kwargs = {'linestyle':'-', 'linewidth': 3, 'color': '#F8766D'}
     rf_plot_kwargs = {'linestyle':'--', 'linewidth': 3, 'color': '#00BA38'}
-    gb_plot_kwargs = {'linestyle':':', 'linewidth': 3, 'color': '#619CFF'}
+    gb_plot_kwargs = {'linestyle':'--', 'linewidth': 3, 'color': '#00BA38'}
     
     classifiers = [lr_model, rf_model, gb_model]
     classifier_plot_kwargs = [lr_plot_kwargs, rf_plot_kwargs, gb_plot_kwargs]
@@ -287,9 +305,8 @@ if __name__ == '__main__':
     axs[1].legend(loc='lower left')
     axs[1].set_title("Profit Curves for Best Classifiers")                                                                    
     axs[1].set_xlabel(f"Threshold Percent")
-    axs[1].set_ylabel(f"Profit ($) on {round(len(y_test)/1000,0)}k Users")
+    axs[1].set_ylabel(f"Profit ($) on {round(len(split_data[2])/1000,0)}k Users")
     axs[1].xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
     
-    plt.suptitle("Comparing Best Classifiers", y=0.99, fontsize=30)
     plt.tight_layout()
     plt.savefig(f"images/original_profit_and_f1_curves.png")
