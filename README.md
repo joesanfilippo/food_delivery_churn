@@ -175,7 +175,7 @@ Next, I wanted to look at which features contributed most to my best model by co
 
 <table>
 <tr><th> Original Dataset </th> <th> Boolean Dataset </th></tr>
-<tr><td>
+<tr style="vertical-align:top"><td>
 
 | Feature                        | Importance % |
 |--------------------------------|--------------|
@@ -204,7 +204,7 @@ Next, I wanted to look at which features contributed most to my best model by co
 | First Order Median Meal Rating | 0.2% |
 | First Order Delivered On Time | 0.1% |
         
-</td><td style="vertical-align:top">
+</td><td>
 
 | Feature                        | Importance % |
 |--------------------------------|--------------|
