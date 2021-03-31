@@ -5,8 +5,8 @@ Food Delivery Company X saw substantial user growth as lockdowns started and res
 
 Using Supervised Machine Learning models, I will attempt to predict the probability a user will churn based of their signup data, first order data, and first 30 days on the platform. 
 
-$$\Large \text{Churned User (+ Class)} = \text{A user who's last order was > 30 days ago}$$
-$$\Large \text{Active User (- Class)} = \text{A user who's last order was <= 30 days ago}$$
+$$\large \text{Churned User (+ Class)} = \text{A user who's last order was > 30 days ago}$$
+$$\large \text{Active User (- Class)} = \text{A user who's last order was <= 30 days ago}$$
 
 ---
 
@@ -83,6 +83,8 @@ As you can see, there is very little difference in the best performing Gradient 
 
 In order to determine the best classifier to use along with the optimal hyperparameters, I used a combination of `GridSearchCV` on the Logistic Regression classifier and `RandomizedSearchCV` on the Random Forest and Gradient Boosting classifers. 
 
+![F1 Score and Profit Curve](images/original_roc_curves.png)
+
 | Feature                        | Importance % |
 |--------------------------------|--------------|
 | Days Since Signup | 19.8% |
@@ -112,7 +114,7 @@ In order to determine the best classifier to use along with the optimal hyperpar
 
 ## Model and Threshold Selection
 
-![F1 Score and Profit Curve](images/profit_and_f1_curves.png)
+![F1 Score and Profit Curve](images/original_profit_and_f1_curves.png)
 
 ## Conclusions
 

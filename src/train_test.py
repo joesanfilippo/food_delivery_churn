@@ -306,7 +306,7 @@ if __name__ == '__main__':
         
         model_plot = Churn_Plot(classifier, X_test, y_test)
         model_plot.plot_f1_curve(axs[0], kwargs)             
-        model_plot.plot_profit_curve(axs[1], kwargs)
+        model_plot.plot_profit_curve(axs[1], kwargs, tp_cost=2.99)
     
     axs[0].legend(loc='lower left')
     axs[0].set_title(f"F1 Curves for Best Classifiers")                                                                    
@@ -320,9 +320,6 @@ if __name__ == '__main__':
     axs[1].set_xlabel(f"Threshold Percent")
     axs[1].set_ylabel(f"Profit ($) on {round(len(y_test)/1000,0)}k Users")
     axs[1].xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
-    # threshold_labels = ['100%', '80%', '60%', '40%', '20%', '0%']
-    # axs[1].set_xticks(np.arange(0, 101, step=20))
-    # axs[1].set_xticklabels(threshold_labels)
     
     plt.suptitle("Comparing Best Classifiers", y=0.99, fontsize=30)
     plt.tight_layout()

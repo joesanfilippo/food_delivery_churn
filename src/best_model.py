@@ -16,13 +16,13 @@ from collections import OrderedDict
 if __name__ == '__main__':
 
     bucket_name = 'food-delivery-churn'
-    filename = 'original_churn'
+    filename = 'boolean_churn'
     is_feature_selection = False
     feature_list = []
 
     X_train, X_test, y_train, y_test = load_X_y(bucket_name, filename, is_feature_selection, feature_list)
 
-    churn_model = Churn_Model(GradientBoostingClassifier(), 30, (X_train, X_test, y_train, y_test))
+    churn_model = Churn_Model(GradientBoostingClassifier(), (X_train, X_test, y_train, y_test))
     churn_model.convert_cat_to_int()
     X_train, X_test, y_train, y_test = churn_model.X_train, churn_model.X_test, churn_model.y_train, churn_model.y_test
     
@@ -48,6 +48,5 @@ if __name__ == '__main__':
                                     ,features=[i for i in range(0,len(X_train.columns.tolist()))]
                                     ,X=X_train
                                     ,n_cols=4
-                                    ,feature_names=X_train.columns.tolist()
-                                    ,grid_resolution=10)
+                                    ,feature_names=X_train.columns.tolist())
     plt.show()

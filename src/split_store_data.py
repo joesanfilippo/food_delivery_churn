@@ -72,11 +72,15 @@ if __name__ == '__main__':
                  ,"Norvos"]
 
     params = {}
-    churn_query_id = 714507
     api_key = os.environ['REDASH_API_KEY']
     query_url = os.environ['REDASH_LINK']
 
-    churn_data = Query_results(query_url, churn_query_id, api_key, params)
+    original_churn_query_id = 714507
+    original_churn_data = Query_results(query_url, original_churn_query_id, api_key, params)
+
+    boolean_churn_query_id = 730923
+    boolean_churn_data = Query_results(query_url, boolean_churn_query_id, api_key, params)
+
 
     clean_dict = {'datetime_cols': ['signup_time_utc', 'last_order_time_utc']
                 ,'target_column': 'last_order_time_utc'
@@ -86,5 +90,5 @@ if __name__ == '__main__':
                 }
 
     print(f"Cleaning and storing data...")
-    clean_store_data(churn_data, clean_dict, 'food-delivery-churn', 'original_churn')
-
+    clean_store_data(original_churn_data, clean_dict, 'food-delivery-churn', 'original_churn')
+    clean_store_data(boolean_churn_data, clean_dict, 'food-delivery-churn', 'boolean_churn')
