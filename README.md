@@ -85,32 +85,64 @@ In order to determine the best classifier to use along with the optimal hyperpar
 
 ![F1 Score and Profit Curve](images/original_roc_curves.png)
 
-| Feature                        | Importance % |
-|--------------------------------|--------------|
-| Days Since Signup | 19.8% |
-| First 30 Day Orders | 19.3% |
-| Signup To Order Hours | 16.8% |
-| First 30 Day Discount Percent | 6.4% |
-| First 30 Day Avg Gmv | 6.1% |
-| First Order Payment | 4.5% |
-| First Order Gmv | 4.2% |
-| First Order Discount Percent | 4.0% |
-| City Name | 3.8% |
-| First Order Discount Amount | 3.8% |
-| First 30 Day Avg Meal Rating | 2.2% |
-| Acquisition Subcategory | 1.5% |
-| First Order Hours Late | 1.5% |
-| First Order Meal Reviews | 1.2% |
-| Language | 0.9% |
-| Acquisition Category | 0.8% |
-| First Order Avg Meal Rating | 0.6% |
-| Foreign User | 0.6% |
-| First 30 Day Avg Driver Rating | 0.5% |
-| First 30 Day Subscription User | 0.4% |
-| City Group | 0.4% |
-| First Order Driver Rating | 0.3% |
-| First Order Median Meal Rating | 0.2% |
-| First Order Delivered On Time | 0.1% |
+<table>
+    <tr
+        ><th> Original Dataset </th> <th> Boolean Dataset </th>
+    </tr>
+    <tr>
+        <td>
+        | Feature                        | Importance % |
+        |--------------------------------|--------------|
+        | Days Since Signup | 19.8% |                    
+        | First 30 Day Orders | 19.3% |
+        | Signup To Order Hours | 16.8% |
+        | First 30 Day Discount Percent | 6.4% |
+        | First 30 Day Avg Gmv | 6.1% |
+        | First Order Payment | 4.5% |
+        | First Order Gmv | 4.2% |
+        | First Order Discount Percent | 4.0% |
+        | City Name | 3.8% |
+        | First Order Discount Amount | 3.8% |
+        | First 30 Day Avg Meal Rating | 2.2% |
+        | Acquisition Subcategory | 1.5% |
+        | First Order Hours Late | 1.5% |
+        | First Order Meal Reviews | 1.2% |
+        | Language | 0.9% |
+        | Acquisition Category | 0.8% |
+        | First Order Avg Meal Rating | 0.6% |
+        | Foreign User | 0.6% |
+        | First 30 Day Avg Driver Rating | 0.5% |
+        | First 30 Day Subscription User | 0.4% |
+        | City Group | 0.4% |
+        | First Order Driver Rating | 0.3% |
+        | First Order Median Meal Rating | 0.2% |
+        | First Order Delivered On Time | 0.1% |
+        </td>
+        <td>
+        | Feature                        | Importance % |
+        |--------------------------------|--------------|
+        | Days Since Signup | 22.0% |
+        | First 30 Day Orders | 20.0% |
+        | Signup To Order Hours | 18.1% |
+        | First 30 Day Discount Percent | 7.4% |
+        | First 30 Day Avg Gmv | 7.3% |
+        | First Order Gmv | 6.7% |
+        | First Order Discount Percent | 6.4% |
+        | City Name | 4.7% |
+        | Acquisition Subcategory | 2.2% |
+        | First Order Hours Late | 1.7% |
+        | First Order Meal Reviews | 1.5% |
+        | Has First 30 Day Meal Rating | 0.6% |
+        | Has First 30 Day Support Interaction | 0.6% |
+        | Has First 30 Day Driver Rating | 0.3% |
+        | Has First Order Driver Rating | 0.3% |
+        | Has First Order Avg Meal Rating | 0.2% |
+        | Has First 30 Day Driver Tips | 0.1% |
+        | Has First Order Driver Tips | 0.0% |
+        </td>
+    </tr>
+</table>
+
 
 ## Model and Threshold Selection
 
