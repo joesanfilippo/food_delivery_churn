@@ -138,6 +138,12 @@ In order to determine the best classifier to use along with the optimal hyperpar
 | Has First Order Avg Meal Rating | 0.2% |
 | Has First 30 Day Driver Tips | 0.1% |
 | Has First Order Driver Tips | 0.0% |
+| | |
+| | |
+| | |
+| | |
+| | |
+| | |
         
 </td></tr>
 </table>
