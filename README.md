@@ -55,6 +55,8 @@ Most of my data cleaning occurred when I was writing the query itself, which inc
 * Converting NaNs to -1 for ratings and 0 for late orders.
 * Calculating 30 day and last order metrics
 
+In order to use categorical string features like `city_name` or `acquisition_category` in my machine learning models, I needed to encode them to numerical features. I decided to use ordinal encoding where each label was assigned an integer from 0 to the # of unique labels.
+
 ## EDA
 My first step in EDA was to look at how churned and active user profiles differ along continuous and categorical predictors. In order to visualize their differences, I decided to use Kernel Density Estimates (KDE) plots for continuous variables and 100% Fill Bar Charts for categorical variables.
 
@@ -81,9 +83,98 @@ As you can see, there is very little difference in the best performing Gradient 
 
 ## Model Tuning & Performance
 
-In order to determine the best classifier to use along with the optimal hyperparameters, I used a combination of `GridSearchCV` on the Logistic Regression classifier and `RandomizedSearchCV` on the Random Forest and Gradient Boosting classifers. 
+My first step in determining the best classifier to use was to iterate through various hyperparameters to find which ones would give me the best result. I used a combination of `GridSearchCV` on the Logistic Regression classifier and `RandomizedSearchCV` on the Random Forest and Gradient Boosting classifers with the following hyperparameters: 
 
-![F1 Score and Profit Curve](images/original_roc_curves.png)
+<table>
+    <thead>
+        <tr>
+            <th>Classifier</th>
+            <th>Hyperparameters</th>
+            <th>Values</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td rowspan=5>Logisitic Regression</td>
+            <td>`penalty`</td>
+            <td>['l1', 'l2']</td>
+        </tr>
+        <tr>
+            <td>fit_intercept</td>
+            <td>[True, False]</td>
+        </tr>
+        <tr>
+            <td>class_weight</td>
+            <td>[None, 'Balanced']</td>
+        </tr>
+        <tr>
+            <td>solver</td>
+            <td>['liblinear']</td>
+        </tr>
+        <tr>
+            <td>max_iter</td>
+            <td>[200,500]</td>
+        </tr>
+        <tr>
+            <td rowspan=6>Random Forest</td>
+            <td>max_depth</td>
+            <td>[2, 4, 8]</td>
+        </tr>
+        <tr>
+            <td>max_features</td>
+            <td>['sqrt', 'log2', None]</td>
+        </tr>
+        <tr>
+            <td>min_samples_leaf</td>
+            <td>[1, 2, 4]</td>
+        </tr>
+        <tr>
+            <td>min_samples_split</td>
+            <td>[2, 4]</td>
+        </tr>
+        <tr>
+            <td>bootstrap</td>
+            <td>[True, False]</td>
+        </tr>
+        <tr>
+            <td>n_estimators</td>
+            <td>[5, 10, 25, 50, 100, 200]</td>
+        </tr>
+        <tr>
+            <td rowspan=6>Gradient Boosting</td>
+            <td>learning_rate</td>
+            <td>[0.01, 0.05, 0.1, 0.2, 0.25]</td>
+        </tr>
+        <tr>
+            <td>max_depth</td>
+            <td>[2, 4, 8]</td>
+        </tr>
+        <tr>
+            <td>max_features</td>
+            <td>['sqrt', 'log2', None]</td>
+        </tr>
+        <tr>
+            <td>min_samples_leaf</td>
+            <td>[1, 2, 4]</td>
+        </tr>
+        <tr>
+            <td>subsample</td>
+            <td>[0.25, 0.5, 0.75, 1.0]</td>
+        </tr>
+        <tr>
+            <td>n_estimators</td>
+            <td>[5, 10, 25, 50, 100, 200, 250]</td>
+        </tr>
+    </tbody>
+</table>
+
+After each iteration of finding the optimal hyperparameters, I took the results from the best model of predicting the probability of the positive class and added it to my features for training the next classifier. This had significant improvements on the Random Forest and Gradient Boosting classifiers.
+
+I decided to use the ROC AUC score to compare my models and plotting each one against the other. My best model achieved an AUC score of 0.XX on unseen data.
+
+![ROC Curve](images/original_roc_curves.png)
+
+Next, I wanted to look at which features contributed most to my model by comparing their feature importances. On the left side of the table are my feature importances using the original dataset. After looking at these and comparing them to the KDE plots, I realized it might not matter what rating you give a meal or driver so much as IF you gave either a rating. I re-engineered my features to change ratings from int/float to booleans and re-ran the feature importances, also removing less important features like City Group, Subscription User, First Order Delivered On-Time, and Foreign User.
 
 <table>
 <tr><th> Original Dataset </th> <th> Boolean Dataset </th></tr>
@@ -116,7 +207,7 @@ In order to determine the best classifier to use along with the optimal hyperpar
 | First Order Median Meal Rating | 0.2% |
 | First Order Delivered On Time | 0.1% |
         
-</td><td>
+</td><td style="vertical-align:top">
 
 | Feature                        | Importance % |
 |--------------------------------|--------------|
@@ -138,12 +229,6 @@ In order to determine the best classifier to use along with the optimal hyperpar
 | Has First Order Avg Meal Rating | 0.2% |
 | Has First 30 Day Driver Tips | 0.1% |
 | Has First Order Driver Tips | 0.0% |
-| | |
-| | |
-| | |
-| | |
-| | |
-| | |
         
 </td></tr>
 </table>

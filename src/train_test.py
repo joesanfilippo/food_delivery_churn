@@ -79,26 +79,8 @@ class Churn_Model(object):
         print(f"Best {scoring_type} Score for {classifier_name}: {self.model_search.best_score_:.4f}")
 
         self.best_model = self.model_search.best_estimator_
-
-class Churn_Plot(object):
-
-    def __init__(self, classifier, X_test, y_test):
-        """ Initialize an instance of the Churn_Plot class given a classifier and number of days to use to 
-            classify a user as "churned"
-        Args:
-            classifier (sklearn model): The type of classifier to use in the model. Examples include Logisitic 
-                                        Regression, RandomForestClassifier, and GradientBoostingClassifier.
-            X_test (Pandas DataFrame): The predictor values to use in performance evaluation
-            y_test (Pandas Series): The target values to use to measure performance
-
-        Returns:
-            None
-            Instantiates a Churn_Model class 
-        """
-        self.classifier = classifier
-        self.X_test = X_test
-        self.y_test = y_test
-        self.y_probs = self.classifier.predict_proba(self.X_test)[:,1] 
+        self.y_train_probs = self.best_model.predict_proba(self.X_train)[:,1] 
+        self.y_test_probs = self.best_model.predict_proba(self.X_test)[:,1] 
 
     def plot_model_roc(self, ax, plot_kwargs={}):
         """ Plots the ROC Curve for a classifier given the test data and axis
@@ -111,10 +93,10 @@ class Churn_Plot(object):
             None
             Modifies ax by plotting the ROC curve from the best classifier.
         """
-        auc_score = roc_auc_score(self.y_test, self.y_probs)
-        fpr, tpr, threshold = roc_curve(self.y_test, self.y_probs)
+        auc_score = roc_auc_score(self.y_test, self.y_test_probs)
+        fpr, tpr, threshold = roc_curve(self.y_test, self.y_test_probs)
         roc_df = pd.DataFrame(zip(fpr, tpr, threshold), columns = ['fpr', 'tpr', 'threshold'])
-        ax.plot(roc_df.fpr, roc_df.tpr, label=f"{self.classifier.__class__.__name__} AUC={auc_score:.3f}", **plot_kwargs)
+        ax.plot(roc_df.fpr, roc_df.tpr, label=f"{self.best_model.__class__.__name__} AUC={auc_score:.3f}", **plot_kwargs)
     
     def calc_profit_curve(self, tp_cost, fp_cost):
         """ Calculates the profit for a range of thresholds given the true and false positive costs.
@@ -131,7 +113,7 @@ class Churn_Plot(object):
         threshold_list = []
 
         for threshold in thresholds:
-            y_preds = (self.y_probs >= threshold).astype(int)
+            y_preds = (self.y_test_probs >= threshold).astype(int)
             tn, fp, fn, tp = confusion_matrix(self.y_test, y_preds).ravel()
             profit = tp * tp_cost + fp * fp_cost
             profit_list.append(round(profit, 2))
@@ -155,7 +137,7 @@ class Churn_Plot(object):
 
         max_profit = max(y_axis) / len(self.X_test)
         max_profit_line = x_axis[y_axis.index(max(y_axis))]
-        classifier_name = self.classifier.__class__.__name__
+        classifier_name = self.best_model.__class__.__name__
 
         ax.plot(x_axis, y_axis, label=f"{classifier_name} Profit per User: ${max_profit:.2f}", **plot_kwargs)
         ax.axvline(x=max_profit_line, label=f"Max Profit Threshold: {max_profit_line:.0%}", **plot_kwargs)
@@ -175,14 +157,14 @@ class Churn_Plot(object):
         f1_list = []
 
         for threshold in thresholds:
-            y_preds = (self.y_probs >= threshold).astype(int)
+            y_preds = (self.y_test_probs >= threshold).astype(int)
             f1 = f1_score(self.y_test, y_preds)
             f1_list.append(f1)
             threshold_list.append(threshold)
 
         max_f1_score = max(f1_list)
         max_threshold = threshold_list[f1_list.index(max(f1_list))]
-        classifier_name = self.classifier.__class__.__name__
+        classifier_name = self.best_model.__class__.__name__
 
         ax.plot(threshold_list, f1_list, label=f"{classifier_name} F1 Score: {max_f1_score:.1%}", **plot_kwargs)
         ax.axvline(x=max_threshold
@@ -232,65 +214,51 @@ if __name__ == '__main__':
     filename = 'original_churn'
     is_feature_selection = False
     feature_list = []
-    ## Only use first order columns
-    # column_tuple = ("first_30", "city", "signup_to")
-    # first_order_columns = rf_model.X_train.columns.to_series().str.startswith(column_tuple)]
-    
-    ## Only use select columns 
-    # feature_list = ['days_since_signup'
-    #                ,'first_30_day_orders'
-    #                ,'signup_to_order_hours'
         
     split_data = load_X_y(bucket_name, filename, is_feature_selection, feature_list)
 
     lr_model = Churn_Model(LogisticRegression(), split_data)
-    rf_model = Churn_Model(RandomForestClassifier(), split_data)
-    gb_model = Churn_Model(GradientBoostingClassifier(), split_data)
-
-    lr_model.convert_cat_to_int()
-    rf_model.convert_cat_to_int()
-    gb_model.convert_cat_to_int()
-    
     logistic_regression_grid = {'penalty': ['l1', 'l2']
                             ,'fit_intercept': [True, False]
                             ,'class_weight': [None, 'balanced']
                             ,'solver': ['liblinear']
-                            ,'max_iter': [50,100,200,500]
+                            ,'max_iter': [200,500]
                             }
-    
+    lr_model.convert_cat_to_int()
+    lr_model.fit_model(logistic_regression_grid, GridSearchCV, 'roc_auc')
+     
+    rf_model = Churn_Model(RandomForestClassifier(), split_data)
     random_forest_grid = {'max_depth': [2, 4, 8]
                         ,'max_features': ['sqrt', 'log2', None]
                         ,'min_samples_leaf': [1, 2, 4]
                         ,'min_samples_split': [2, 4]
                         ,'bootstrap': [True, False]
                         ,'n_estimators': [5,10,25,50,100,200]}
+    rf_model.fit_model(random_forest_grid, RandomizedSearchCV, 'roc_auc')
     
+    split_data[0]['lr_predictions'] = lr_model.y_train_probs
+    split_data[1]['lr_predictions'] = lr_model.y_test_probs
+    
+    gb_model = Churn_Model(GradientBoostingClassifier(), split_data)
     gradient_boosting_grid = {'learning_rate': [0.01, 0.05, 0.1, 0.2, 0.25]
                             ,'max_depth': [2, 4, 8]
-                            ,'subsample': [0.25, 0.5, 0.75, 1.0]
-                            ,'min_samples_leaf': [1, 2, 4]
                             ,'max_features': ['sqrt', 'log2', None]
+                            ,'min_samples_leaf': [1, 2, 4]
+                            ,'subsample': [0.25, 0.5, 0.75, 1.0]
                             ,'n_estimators': [5,10,25,50,100,200,250]}
-    
-    lr_model.fit_model(logistic_regression_grid, GridSearchCV, 'roc_auc')
-    rf_model.fit_model(random_forest_grid, RandomizedSearchCV, 'roc_auc')
     gb_model.fit_model(gradient_boosting_grid, RandomizedSearchCV, 'roc_auc')
-
-    X_test = split_data[1]
-    y_test = split_data[3]
 
     lr_plot_kwargs = {'linestyle':'-', 'linewidth': 3, 'color': '#F8766D'}
     rf_plot_kwargs = {'linestyle':'--', 'linewidth': 3, 'color': '#00BA38'}
     gb_plot_kwargs = {'linestyle':':', 'linewidth': 3, 'color': '#619CFF'}
     
-    classifiers = [lr_model.best_model, rf_model.best_model, gb_model.best_model]
+    classifiers = [lr_model, rf_model, gb_model]
     classifier_plot_kwargs = [lr_plot_kwargs, rf_plot_kwargs, gb_plot_kwargs]
 
     fig, ax = plt.subplots(figsize=(15,15))
     
     for classifier, kwargs in zip(classifiers, classifier_plot_kwargs):
-        model_plot = Churn_Plot(classifier, X_test, y_test)
-        model_plot.plot_model_roc(ax, kwargs)             
+        classifier.plot_model_roc(ax, kwargs)             
 
     ax.legend(loc='lower right')
     ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
@@ -306,9 +274,8 @@ if __name__ == '__main__':
     
     for classifier, kwargs in zip(classifiers, classifier_plot_kwargs):
         
-        model_plot = Churn_Plot(classifier, X_test, y_test)
-        model_plot.plot_f1_curve(axs[0], kwargs)             
-        model_plot.plot_profit_curve(axs[1], kwargs, tp_cost=2.99)
+        classifier.plot_f1_curve(axs[0], kwargs)             
+        classifier.plot_profit_curve(axs[1], kwargs, tp_cost=2.99)
     
     axs[0].legend(loc='lower left')
     axs[0].set_title(f"F1 Curves for Best Classifiers")                                                                    
