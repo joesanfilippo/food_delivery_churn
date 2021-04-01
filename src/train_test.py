@@ -139,7 +139,7 @@ class Churn_Model(object):
         
         return threshold_list, profit_list
 
-    def plot_profit_curve(self, ax, plot_kwargs={}, tp_cost=8.42, fp_cost=-5.43):
+    def plot_profit_curve(self, ax, plot_kwargs={}, tp_cost=1.00, fp_cost=-1.00):
         """ Plots the Profit Curve for a classifier given an ax and plot_kwargs
         Args:
             ax (matplotlib axis): The axis to plot the best classifier's F1 score curve.
@@ -153,7 +153,7 @@ class Churn_Model(object):
         """
         x_axis, y_axis = self.calc_profit_curve(tp_cost, fp_cost)
 
-        max_profit = max(y_axis) / len(self.X_test)
+        max_profit = max(y_axis) / len(self.y_test)
         max_profit_line = x_axis[y_axis.index(max(y_axis))]
     
         ax.plot(x_axis, y_axis, label=f"{self.classifier_name} Profit per User: ${max_profit:.2f}", **plot_kwargs)
@@ -268,7 +268,7 @@ if __name__ == '__main__':
 
     lr_plot_kwargs = {'linestyle':'-', 'linewidth': 3, 'color': '#F8766D'}
     rf_plot_kwargs = {'linestyle':'--', 'linewidth': 3, 'color': '#00BA38'}
-    gb_plot_kwargs = {'linestyle':'--', 'linewidth': 3, 'color': '#00BA38'}
+    gb_plot_kwargs = {'linestyle':':', 'linewidth': 3, 'color': '#619CFF'}
     
     classifiers = [lr_model, rf_model, gb_model]
     classifier_plot_kwargs = [lr_plot_kwargs, rf_plot_kwargs, gb_plot_kwargs]
@@ -293,7 +293,7 @@ if __name__ == '__main__':
     for classifier, kwargs in zip(classifiers, classifier_plot_kwargs):
         
         classifier.plot_f1_curve(axs[0], kwargs)             
-        classifier.plot_profit_curve(axs[1], kwargs, tp_cost=2.99)
+        classifier.plot_profit_curve(axs[1], kwargs, tp_cost=2.99, fp_cost=-5.43)
     
     axs[0].legend(loc='lower left')
     axs[0].set_title(f"F1 Curves for Best Classifiers")                                                                    
@@ -305,7 +305,7 @@ if __name__ == '__main__':
     axs[1].legend(loc='lower left')
     axs[1].set_title("Profit Curves for Best Classifiers")                                                                    
     axs[1].set_xlabel(f"Threshold Percent")
-    axs[1].set_ylabel(f"Profit ($) on {round(len(split_data[2])/1000,0)}k Users")
+    axs[1].set_ylabel(f"Profit ($) on {round(len(split_data[3])/1000,0)}k Users")
     axs[1].xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
     
     plt.tight_layout()

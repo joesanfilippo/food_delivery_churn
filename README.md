@@ -71,7 +71,7 @@ Looking at the percent of active and churned users by City, you can see that on 
 Next, I wanted to see if changing the number of days before we considered a user as churned helped create separation between the two classes. While I initially set the number of days to 30, I also looked at 60 and 90 days. The ROC-AUC scores for their best performing models are listed in the table below:
 
 | Best Classifier     |   30 Days  | 60 Days    | 90 Days    |
-|---------------------|------------|------------|------------|
+|--------------------:|:----------:|:----------:|:----------:|
 | Logistic Regression | 0.724      | 0.726      | 0.733      |
 | Random Forest       | 0.776      | 0.764      | 0.768      |
 | Gradient Boosting   | 0.786      | 0.776      | 0.790      |
@@ -165,81 +165,98 @@ My first step in determining the best classifier to use was to iterate through v
     </tbody>
 </table>
 
-After finding the optimal hyperparameters for my Logistic Regression classifier, I took the results from the best model of predicting the probability of the positive class and added it to my features for training the Random Forest and Gradient Boosting classifiers.
+After finding the optimal hyperparameters for my Logistic Regression classifier, I took the results from the best model and predicted the probability of the positive class for each data point. Then I added those probabilities to my features for training the Random Forest and Gradient Boosting classifiers.
 
 I decided to use the ROC AUC score to compare my models and plotted each one against the other. My best model used the Gradient Boosting classifier and achieved an AUC score of 0.78 on unseen data.
 
 ![ROC Curve](images/original_roc_curves.png)
 
-Next, I wanted to look at which features contributed most to my best model by comparing their feature importances. On the left side of the table are my feature importances using the original dataset. After looking at these and comparing them to the KDE plots, I realized it might not matter what rating you give a meal or driver so much as IF you gave either a rating. I re-engineered my features to change ratings from int/float to booleans and re-ran the feature importances, also removing less important features like City Group, Subscription User, First Order Delivered On-Time, and Foreign User.
+Next, I wanted to look at which features contributed most to my best model by comparing their feature importances. On the left side of the table are my feature importances using the original dataset. After looking at these and comparing them to the KDE plots, I realized it might not matter what rating you give a meal or driver so much as *if* you gave either a rating. I re-engineered my features to change ratings from int/float to booleans and re-ran the feature importances, also removing less important features like City Group, Subscription User, First Order Delivered On-Time, and Foreign User.
 
 <table>
 <tr><th> Original Dataset </th> <th> Boolean Dataset </th></tr>
 <tr style="vertical-align:top"><td>
 
 | Feature                        | Importance % |
-|--------------------------------|--------------|
-| Days Since Signup | 19.8% |                    
-| First 30 Day Orders | 19.3% |
-| Signup To Order Hours | 16.8% |
-| First 30 Day Discount Percent | 6.4% |
-| First 30 Day Avg Gmv | 6.1% |
-| First Order Payment | 4.5% |
-| First Order Gmv | 4.2% |
-| First Order Discount Percent | 4.0% |
-| City Name | 3.8% |
-| First Order Discount Amount | 3.8% |
-| First 30 Day Avg Meal Rating | 2.2% |
-| Acquisition Subcategory | 1.5% |
-| First Order Hours Late | 1.5% |
-| First Order Meal Reviews | 1.2% |
-| Language | 0.9% |
-| Acquisition Category | 0.8% |
-| First Order Avg Meal Rating | 0.6% |
-| Foreign User | 0.6% |
-| First 30 Day Avg Driver Rating | 0.5% |
-| First 30 Day Subscription User | 0.4% |
-| City Group | 0.4% |
-| First Order Driver Rating | 0.3% |
-| First Order Median Meal Rating | 0.2% |
-| First Order Delivered On Time | 0.1% |
+|-------------------------------:|:------------:|
+| Lr Predictions | 29.7% |
+| Days Since Signup | 19.1% |
+| First 30 Day Orders | 19.0% |
+| Signup To Order Hours | 9.8% |
+| First 30 Day Avg Meal Rating | 5.1% |
+| First 30 Day Discount Percent | 3.0% |
+| City Name | 2.5% |
+| First 30 Day Support Messages | 2.5% |
+| First 30 Day Avg Gmv | 2.1% |
+| First 30 Day Subscription User | 1.5% |
+| First Order Gmv | 1.1% |
+| Acquisition Channel | 1.1% |
+| First 30 Day Avg Driver Tips | 1.0% |
+| First Order Discount Percent | 0.8% |
+| First Order Driver Tips | 0.6% |
+| First Order Meal Reviews | 0.6% |
+| First Order Avg Meal Rating | 0.2% |
+| First Order Hours Late | 0.1% |
+| First 30 Day Avg Driver Rating | 0.1% |
+| First Order Driver Rating | 0.1% |
+| First Order Delivered On Time | 0.0% |
         
 </td><td>
 
 | Feature                        | Importance % |
-|--------------------------------|--------------|
-| Days Since Signup | 22.0% |
-| First 30 Day Orders | 20.0% |
-| Signup To Order Hours | 18.1% |
-| First 30 Day Discount Percent | 7.4% |
-| First 30 Day Avg Gmv | 7.3% |
-| First Order Gmv | 6.7% |
-| First Order Discount Percent | 6.4% |
-| City Name | 4.7% |
-| Acquisition Subcategory | 2.2% |
-| First Order Hours Late | 1.7% |
-| First Order Meal Reviews | 1.5% |
-| Has First 30 Day Meal Rating | 0.6% |
-| Has First 30 Day Support Interaction | 0.6% |
-| Has First 30 Day Driver Rating | 0.3% |
-| Has First Order Driver Rating | 0.3% |
-| Has First Order Avg Meal Rating | 0.2% |
+|-------------------------------:|:------------:|
+| Lr Predictions | 45.2% |
+| Days Since Signup | 18.1% |
+| Signup To Order Hours | 12.8% |
+| First 30 Day Orders | 9.7% |
+| City Name | 2.4% |
+| First 30 Day Discount Percent | 2.4% |
+| First Order Discount Percent | 2.2% |
+| First 30 Day Avg Gmv | 1.8% |
+| First Order Gmv | 1.7% |
+| First 30 Day Support Messages | 1.2% |
+| Acquisition Channel | 0.7% |
+| First Order Meal Reviews | 0.5% |
+| Has First 30 Day Meal Rating | 0.5% |
+| First Order Hours Late | 0.4% |
+| Has First Order Avg Meal Rating | 0.1% |
+| Has First Order Driver Rating | 0.1% |
+| Has First 30 Day Driver Rating | 0.1% |
+| Has First Order Driver Tips | 0.1% |
 | Has First 30 Day Driver Tips | 0.1% |
-| Has First Order Driver Tips | 0.0% |
         
 </td></tr>
 </table>
 
-Overall, using this Boolean feature set instead of my original one, I was able to drop 6 features and convert 6 others to boolean values while still maintaining a 0.78 AUC ROC score.
+Overall, using this Boolean feature set instead of my original one, I was able to drop 2 features and convert 6 others to boolean values without losing any predictive capabilities.
+
+The best model was Gradient Boosting Classifier with the following hyperparameters:
+```python
+subsample=0.75
+n_estimators=10
+min_samples_leaf=1
+max_features=None
+max_depth=8
+learning_rate=0.25
+```
 
 ## Model and Threshold Selection
 
 Now that I had my best model for predicting the probability that a user will churn, I wanted to see what threshold for probability is optimal to determine our positive and negative class. In order to do this, I used an F1 score which balances the importance of a False Positive and a False Negative as well as a Profit Curve which takes into account the cost of predicting True Positives and False Positives.
 
-![F1 Score and Profit Curve](images/original_profit_and_f1_curves.png)
+![F1 Score and Profit Curve](images/boolean_profit_and_f1_curves.png)
+
+For my true positive cost, I calculated the Lifetime Value (LTV) of a user in Company X and subtracted the amount of LTV they accrue in the first 30 days. This came out to $2.99. 
+
+For the false positive cost, I looked at the average amount of promotion redeemed per order for all orders. This came out to -$5.43. 
+
+Using those two values I calculated the profit for each threshold between 0% and 100% and found the max profit for my best model was 65%. This is the value I should use to evaluate whether or not a user will churn.
 
 ## Conclusions
+Overall, I am happy with the results of my model but would have liked to get more predicitive power out of it (my original goal was > 80%). The next step will be using this model to predict churn for new users in Company X so that they can target different cohorts with promotions to try and reduce the churn they have been seeing recently.
 
 ### Lessons Learned
+* Tuning models is hard! You can try to run several different options, change/add/remove features, and play with the hyperparameters only to see a 0.1 point increase.
 
 ## Future Work
+For my next capstone, I would like to have this model run on a regular frequency and update / create predictions for each user. Then I could store those predictions in Company X's database so the marketing and business intelligence teams can query them on demand and make cohorts based off the churn probabilities.
