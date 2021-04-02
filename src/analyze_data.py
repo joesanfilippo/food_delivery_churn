@@ -82,7 +82,7 @@ class EDA_Plot(object):
 
         plt.tight_layout(rect=(0,0,1,0.98))
         plt.suptitle(f"KDE Plots for Continuous Predictors", y=0.99, fontsize=35)
-        plt.savefig(f"images/boolean_kde_plots.png")
+        plt.savefig(f"images/original_kde_plots.png")
 
     def bar_categorical_plot(self, cat_df, cat_col, ax):
         """ Plots a 100% Fill Stacked Barchart of Churned vs Active users using the values passed.
@@ -136,12 +136,12 @@ class EDA_Plot(object):
 
         plt.tight_layout(rect=(0,0,1,0.98))
         plt.suptitle(f"100% Fill Barchart for Categorical Predictors", y=0.99, fontsize=35)
-        plt.savefig(f"images/boolean_barchart_plots.png")
+        plt.savefig(f"images/original_barchart_plots.png")
 
 if __name__ == '__main__':
     
     bucket_name = 'food-delivery-churn'
-    train_filename = 'boolean_churn_train.csv'
+    train_filename = 'original_churn_train.csv'
     
     churn_eda = EDA_Plot(bucket_name, train_filename)
     

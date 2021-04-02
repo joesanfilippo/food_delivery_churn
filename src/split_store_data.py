@@ -16,6 +16,7 @@ def clean_store_data(churn_data, clean_dict, bucket_name, filename):
                             5. fake_cities: A list of fake city names to replace city_column with. Should be equal
                                             or greater to the number of unique cities in city_column.
         bucket_name (str): The name of the AWS S3 Bucket to store the training and test data in.
+        filename (str): The filename to use when saving the csv files to the AWS S3 Bucket
     
     Returns: None
              Stores the cleaned query results into the AWS bucket

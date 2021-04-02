@@ -6,7 +6,7 @@ def poll_job(s, redash_url, job):
     """ Example code adopted from https://github.com/getredash/redash-toolbelt/blob/master/redash_toolbelt/examples/refresh_query.py
     Args:
         s (Request Session): A session from HTTP requests library
-        redash_url: Url of the Redash website to use
+        redash_url (str): Url of the Redash website to use
         job: json job returned from the session response
 
     Returns:

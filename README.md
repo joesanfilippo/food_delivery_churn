@@ -165,7 +165,7 @@ My first step in determining the best classifier to use was to iterate through v
     </tbody>
 </table>
 
-I decided to use the Receiver Operating Characteristic (ROC) Area Under the Curve (AUC) score to compare my models because it balances the trade off between True Positive Rate (TPR) and False Positive Rate (FPR). The goal of ROC AUC score is to maximize your TPR while trying to minimize your FPR. Evaluating this across all thresholds gives you an ROC Curve which I can plot to compare how well one model is doing against the others. My best model used the Gradient Boosting classifier and achieved an AUC score of 0.78 on unseen data.
+I decided to use the Receiver Operating Characteristic (ROC) Area Under the Curve (AUC) score to compare my models because it balances the trade off between True Positive Rate (TPR) and False Positive Rate (FPR). The goal of ROC AUC score is to maximize your TPR while trying to minimize your FPR. Evaluating this across all thresholds gives you an ROC Curve which I can plot to compare how well one model is doing against the others. My best model used the Gradient Boosting classifier and achieved an AUC score of 0.77 on unseen data.
 
 ![ROC Curve](images/original_roc_curves.png)
 
@@ -244,7 +244,7 @@ learning_rate=0.25
 
 Now that I had my best model for predicting the probability that a user will churn, I wanted to see what threshold for probability is optimal to determine our positive and negative class. In order to do this, I used an F1 score which balances the importance of a False Positive and a False Negative as well as a Profit Curve which takes into account the cost of predicting True Positives and False Positives.
 
-![F1 Score and Profit Curve](images/boolean_profit_and_f1_curves.png)
+![F1 Score and Profit Curve](images/original_profit_and_f1_curves.png)
 
 For my true positive cost, I calculated the Lifetime Value (LTV) of a user in Company X and subtracted the amount of LTV they accrue in the first 30 days. This came out to $2.99. 
 

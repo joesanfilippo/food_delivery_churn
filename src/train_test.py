@@ -100,7 +100,7 @@ class Churn_Model(object):
         
         print(f"Feature Importances for {self.classifier_name}")
         print("| Feature                        | Importance % |  ")
-        print("|--------------------------------|--------------| ")
+        print("|-------------------------------:|:------------:| ")
         for feature in sorted(feature_dict, key=feature_dict.__getitem__, reverse=True):
             print(f"| {feature.replace('_', ' ').title()} | {feature_dict[feature]:.1%} |")
 
@@ -131,7 +131,7 @@ class Churn_Model(object):
     def plot_model_roc(self, ax, plot_kwargs={}):
         """ Plots the ROC Curve for a classifier given the test data and axis
         Args:
-            classifier (Sklearn Classifier): The best classifier to test against other classifiers
+            classifier (Sklearn Classifier): The best classifier to compare against other classifiers
             ax (matplotlib axis): An axis to plot the ROC curve on.
             plot_kwargs (dict): Keyword arguments to pass to the plot for formatting
 
@@ -172,8 +172,9 @@ class Churn_Model(object):
         Args:
             ax (matplotlib axis): The axis to plot the best classifier's F1 score curve.
             plot_kwargs (dict): Keyword arguments to visually separate the best classifiers.
-            tp_cost (float): The cost of correctly predicted a positive class
-            fp_cost (float): The cost a incorrectly predicting a positive class
+            vl_kwargs (dict): Keyword arguments to visually separate the vertical line from the profit curve.
+            tp_cost (float): The cost of correctly predicted a positive class. Default is $1.00.
+            fp_cost (float): The cost a incorrectly predicting a positive class. Default is -$1.00.
 
         Returns:
             None
@@ -187,11 +188,12 @@ class Churn_Model(object):
         ax.plot(x_axis, y_axis, label=f"{self.classifier_name} Profit per User: ${max_profit:.2f}", **plot_kwargs)
         ax.axvline(x=max_profit_line, label=f"Max Profit Threshold: {max_profit_line:.0%}", **vl_kwargs)
 
-    def plot_f1_curve(self, ax, plot_kwargs={}):
+    def plot_f1_curve(self, ax, plot_kwargs={}, vl_kwargs={}):
         """ Plots the F1 Score Curve for a classifier given an ax and plot_kwargs
         Args:
             ax (matplotlib axis): The axis to plot the best classifier's F1 score curve.
             plot_kwargs (dict): Keyword arguments to visually separate the best classifiers.
+            vl_kwargs (dict): Keyword arguments to visually separate the vertical line from the profit curve.
             
         Returns:
             None
@@ -212,7 +214,7 @@ class Churn_Model(object):
         
         ax.plot(threshold_list, f1_list, label=f"{self.classifier_name} F1 Score: {max_f1_score:.1%}", **plot_kwargs)
         ax.axvline(x=max_threshold
-                  ,label=f'Ideal Threshold: {max_threshold:.0%}', **plot_kwargs)
+                  ,label=f'Ideal Threshold: {max_threshold:.0%}', **vl_kwargs)
 
 
 def load_X_y(bucket_name, filename, is_feature_selection=False, feature_list=[]):
@@ -255,7 +257,7 @@ def load_X_y(bucket_name, filename, is_feature_selection=False, feature_list=[])
 if __name__ == '__main__':
     
     bucket_name = 'food-delivery-churn'
-    filename = 'boolean_churn'
+    filename = 'original_churn'
     is_feature_selection = False
     feature_list = []
         
@@ -283,9 +285,6 @@ if __name__ == '__main__':
     rf_model.print_feature_importances()
     rf_model.plot_cf_matrix()
 
-    # split_data[0]['lr_predictions'] = lr_model.y_train_probs
-    # split_data[1]['lr_predictions'] = lr_model.y_test_probs
-    
     gb_model = Churn_Model(GradientBoostingClassifier(), split_data)
     gradient_boosting_grid = {'learning_rate': [0.01, 0.05, 0.1, 0.2, 0.25]
                             ,'max_depth': [2, 4, 8]
@@ -299,9 +298,10 @@ if __name__ == '__main__':
 
     lr_plot_kwargs = {'linestyle':'-', 'linewidth': 3, 'color': '#F8766D'}
     rf_plot_kwargs = {'linestyle':'--', 'linewidth': 3, 'color': '#00BA38'}
+    rf_vl_kwargs = {'linestyle':'-', 'linewidth': 1, 'color': '#00BA38'}
     gb_plot_kwargs = {'linestyle':':', 'linewidth': 3, 'color': '#619CFF'}
-    vl_plot_kwargs = {'linestyle':'-', 'linewidth': 3, 'color': '#619CFF'}
-
+    gb_vl_kwargs = {'linestyle':'-', 'linewidth': 1, 'color': '#619CFF'}
+    
     classifiers = [lr_model, rf_model, gb_model]
     classifier_plot_kwargs = [lr_plot_kwargs, rf_plot_kwargs, gb_plot_kwargs]
 
@@ -318,43 +318,31 @@ if __name__ == '__main__':
     ax.set_title(f"ROC Curve for Best Classifiers")                                                                    
     
     plt.tight_layout()
-    # plt.savefig(f"images/boolean_roc_curves.png", dpi=400)
+    plt.savefig(f"images/original_roc_curves.png", dpi=400)
 
-    # fig, axs = plt.subplots(nrows=2, figsize=(15,25))
+    fig, axs = plt.subplots(nrows=2, figsize=(15,25))
     
-    # final_classifiers = [rf_model, gb_model]
-    # final_classifier_plot_kwargs = [rf_plot_kwargs, gb_plot_kwargs]
+    final_classifiers = [rf_model, gb_model]
+    final_classifier_plot_kwargs = [rf_plot_kwargs, gb_plot_kwargs]
+    final_classifier_vl_kwargs = [rf_vl_kwargs, gb_vl_kwargs]
 
-    # for classifier, kwargs in zip(final_classifiers, final_classifier_plot_kwargs):
+    for classifier, plot_kwargs, vl_kwargs in zip(final_classifiers, final_classifier_plot_kwargs, final_classifier_vl_kwargs):
         
-    #     classifier.plot_f1_curve(axs[0], kwargs)             
-    #     classifier.plot_profit_curve(axs[1], kwargs, tp_cost=2.99, fp_cost=-5.43)
+        classifier.plot_f1_curve(axs[0], plot_kwargs, vl_kwargs)             
+        classifier.plot_profit_curve(axs[1], plot_kwargs, vl_kwargs, tp_cost=2.99, fp_cost=-5.43)
     
-    # axs[0].legend(loc='lower left')
-    # axs[0].set_title(f"F1 Curves for Best Classifiers")                                                                    
-    # axs[0].set_xlabel(f"Threshold Percent")
-    # axs[0].set_ylabel(f"F1 Score")
-    # axs[0].xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
-    # axs[0].yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+    axs[0].legend(loc='lower left')
+    axs[0].set_title(f"F1 Curves for Best Classifiers")                                                                    
+    axs[0].set_xlabel(f"Threshold Percent")
+    axs[0].set_ylabel(f"F1 Score")
+    axs[0].xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+    axs[0].yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
 
-    # axs[1].legend(loc='lower left')
-    # axs[1].set_title("Profit Curves for Best Classifiers")                                                                    
-    # axs[1].set_xlabel(f"Threshold Percent")
-    # axs[1].set_ylabel(f"Profit ($) on {round(len(split_data[3])/1000,0)}k Users")
-    # axs[1].xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
-    
-    # plt.tight_layout()
-    # plt.savefig(f"images/boolean_profit_and_f1_curves.png")
-
-    fig, ax = plt.subplots(figsize=(11,9))
-    
-    gb_model.plot_profit_curve(ax, gb_plot_kwargs, vl_plot_kwargs, tp_cost=2.99, fp_cost=-5.43)
-    
-    ax.legend(loc='lower left')
-    ax.set_title("Profit Curves for Best Classifiers")                                                                    
-    ax.set_xlabel(f"Threshold Percent")
-    ax.set_ylabel(f"Profit ($) on {round(len(split_data[3])/1000,0)}k Users")
-    ax.xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+    axs[1].legend(loc='lower left')
+    axs[1].set_title("Profit Curves for Best Classifiers")                                                                    
+    axs[1].set_xlabel(f"Threshold Percent")
+    axs[1].set_ylabel(f"Profit ($) on {round(len(split_data[3])/1000,0)}k Users")
+    axs[1].xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
     
     plt.tight_layout()
-    # plt.savefig(f"images/boolean_profit_curve.png", dpi=400)
+    plt.savefig(f"images/original_profit_and_f1_curves.png")
