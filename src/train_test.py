@@ -9,6 +9,7 @@ font = {'weight': 'bold'
        ,'size': 16}
 plt.rc('font', **font)
 from matplotlib.ticker import PercentFormatter, StrMethodFormatter
+from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
@@ -52,6 +53,10 @@ class Churn_Model(object):
 
             self.X_train[col] = self.X_train[col].map(lambda x: col_dict[x])
             self.X_test[col] = self.X_test[col].map(lambda x: col_dict[x])
+        
+        scaler = StandardScaler()
+        self.X_train = scaler.fit_transform(self.X_train, self.y_train)
+        self.X_test = scaler.fit_transform(self.X_test, self.y_train)
 
     def fit_model(self, grid, selection_type, scoring_type):
         """ Using GridSearchCV or RandomSearchCV, find the optimal hyperparameters of the classifier and 
@@ -82,13 +87,12 @@ class Churn_Model(object):
         self.y_test_probs = self.best_model.predict_proba(self.X_test)[:,1] 
 
     def print_feature_importances(self):
-        """ Plots the ROC Curve for a classifier given the test data and axis
+        """ Prints a table of feature imoprtances sorted by their value
         Args:
             self (Churn_Model class)
 
         Returns: 
             None
-            Prints a sorted table of features by their importance.
         """
         feature_dict = {}
         for feature, importance in zip(self.X_test.columns, self.best_model.feature_importances_):
@@ -99,6 +103,30 @@ class Churn_Model(object):
         print("|--------------------------------|--------------| ")
         for feature in sorted(feature_dict, key=feature_dict.__getitem__, reverse=True):
             print(f"| {feature.replace('_', ' ').title()} | {feature_dict[feature]:.1%} |")
+
+    def plot_cf_matrix(self, normalized=True):
+        """ Prints a simple table of a confusion matrix
+        Args:
+            self (Churn_Model class)
+
+        Returns: 
+            None
+        """
+        y_preds = self.best_model.predict(self.X_test)
+        tn, fp, fn, tp = confusion_matrix(self.y_test, y_preds).ravel()
+        if normalized:
+            print("          |    Actual   |  ")
+            print("          | True  | False  |  ")
+            print("Predicted |:-----:|:------:| ")
+            print(f"True      | {tp/(tn+fp+fn+tp):.1%} | {fp/(tn+fp+fn+tp):.1%} |")
+            print(f"False     | {fn/(tn+fp+fn+tp):.1%} | {tn/(tn+fp+fn+tp):.1%} |")
+        
+        else:
+            print("          |    Actual      |  ")
+            print("          | True  | False  |  ")
+            print("Predicted |:-----:|:------:| ")
+            print(f"True      | {tp} | {fp} |")
+            print(f"False     | {fn} | {tn} |")    
 
     def plot_model_roc(self, ax, plot_kwargs={}):
         """ Plots the ROC Curve for a classifier given the test data and axis
@@ -139,7 +167,7 @@ class Churn_Model(object):
         
         return threshold_list, profit_list
 
-    def plot_profit_curve(self, ax, plot_kwargs={}, tp_cost=1.00, fp_cost=-1.00):
+    def plot_profit_curve(self, ax, plot_kwargs={}, vl_kwargs={}, tp_cost=1.00, fp_cost=-1.00):
         """ Plots the Profit Curve for a classifier given an ax and plot_kwargs
         Args:
             ax (matplotlib axis): The axis to plot the best classifier's F1 score curve.
@@ -157,7 +185,7 @@ class Churn_Model(object):
         max_profit_line = x_axis[y_axis.index(max(y_axis))]
     
         ax.plot(x_axis, y_axis, label=f"{self.classifier_name} Profit per User: ${max_profit:.2f}", **plot_kwargs)
-        ax.axvline(x=max_profit_line, label=f"Max Profit Threshold: {max_profit_line:.0%}", **plot_kwargs)
+        ax.axvline(x=max_profit_line, label=f"Max Profit Threshold: {max_profit_line:.0%}", **vl_kwargs)
 
     def plot_f1_curve(self, ax, plot_kwargs={}):
         """ Plots the F1 Score Curve for a classifier given an ax and plot_kwargs
@@ -227,7 +255,7 @@ def load_X_y(bucket_name, filename, is_feature_selection=False, feature_list=[])
 if __name__ == '__main__':
     
     bucket_name = 'food-delivery-churn'
-    filename = 'original_churn'
+    filename = 'boolean_churn'
     is_feature_selection = False
     feature_list = []
         
@@ -242,6 +270,7 @@ if __name__ == '__main__':
                             }
     lr_model.convert_cat_to_int()
     lr_model.fit_model(logistic_regression_grid, GridSearchCV, 'roc_auc')
+    lr_model.plot_cf_matrix()
     
     rf_model = Churn_Model(RandomForestClassifier(), split_data)
     random_forest_grid = {'max_depth': [2, 4, 8]
@@ -252,9 +281,10 @@ if __name__ == '__main__':
                         ,'n_estimators': [5,10,25,50,100,200]}
     rf_model.fit_model(random_forest_grid, RandomizedSearchCV, 'roc_auc')
     rf_model.print_feature_importances()
+    rf_model.plot_cf_matrix()
 
-    split_data[0]['lr_predictions'] = lr_model.y_train_probs
-    split_data[1]['lr_predictions'] = lr_model.y_test_probs
+    # split_data[0]['lr_predictions'] = lr_model.y_train_probs
+    # split_data[1]['lr_predictions'] = lr_model.y_test_probs
     
     gb_model = Churn_Model(GradientBoostingClassifier(), split_data)
     gradient_boosting_grid = {'learning_rate': [0.01, 0.05, 0.1, 0.2, 0.25]
@@ -265,15 +295,17 @@ if __name__ == '__main__':
                             ,'n_estimators': [5,10,25,50,100,200]}
     gb_model.fit_model(gradient_boosting_grid, RandomizedSearchCV, 'roc_auc')
     gb_model.print_feature_importances()
+    gb_model.plot_cf_matrix()
 
     lr_plot_kwargs = {'linestyle':'-', 'linewidth': 3, 'color': '#F8766D'}
     rf_plot_kwargs = {'linestyle':'--', 'linewidth': 3, 'color': '#00BA38'}
     gb_plot_kwargs = {'linestyle':':', 'linewidth': 3, 'color': '#619CFF'}
-    
+    vl_plot_kwargs = {'linestyle':'-', 'linewidth': 3, 'color': '#619CFF'}
+
     classifiers = [lr_model, rf_model, gb_model]
     classifier_plot_kwargs = [lr_plot_kwargs, rf_plot_kwargs, gb_plot_kwargs]
 
-    fig, ax = plt.subplots(figsize=(15,15))
+    fig, ax = plt.subplots(figsize=(10,8))
     
     for classifier, kwargs in zip(classifiers, classifier_plot_kwargs):
         classifier.plot_model_roc(ax, kwargs)             
@@ -281,32 +313,48 @@ if __name__ == '__main__':
     ax.legend(loc='lower right')
     ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
     ax.xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
-    ax.set_xlabel("False Positivity Rate")
-    ax.set_ylabel("True Positivity Rate")
+    ax.set_xlabel("False Positive Rate")
+    ax.set_ylabel("True Positive Rate")
     ax.set_title(f"ROC Curve for Best Classifiers")                                                                    
     
     plt.tight_layout()
-    plt.savefig(f"images/original_roc_curves.png")
+    # plt.savefig(f"images/boolean_roc_curves.png", dpi=400)
 
-    fig, axs = plt.subplots(nrows=2, figsize=(15,25))
+    # fig, axs = plt.subplots(nrows=2, figsize=(15,25))
     
-    for classifier, kwargs in zip(classifiers, classifier_plot_kwargs):
+    # final_classifiers = [rf_model, gb_model]
+    # final_classifier_plot_kwargs = [rf_plot_kwargs, gb_plot_kwargs]
+
+    # for classifier, kwargs in zip(final_classifiers, final_classifier_plot_kwargs):
         
-        classifier.plot_f1_curve(axs[0], kwargs)             
-        classifier.plot_profit_curve(axs[1], kwargs, tp_cost=2.99, fp_cost=-5.43)
+    #     classifier.plot_f1_curve(axs[0], kwargs)             
+    #     classifier.plot_profit_curve(axs[1], kwargs, tp_cost=2.99, fp_cost=-5.43)
     
-    axs[0].legend(loc='lower left')
-    axs[0].set_title(f"F1 Curves for Best Classifiers")                                                                    
-    axs[0].set_xlabel(f"Threshold Percent")
-    axs[0].set_ylabel(f"F1 Score")
-    axs[0].xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
-    axs[0].yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+    # axs[0].legend(loc='lower left')
+    # axs[0].set_title(f"F1 Curves for Best Classifiers")                                                                    
+    # axs[0].set_xlabel(f"Threshold Percent")
+    # axs[0].set_ylabel(f"F1 Score")
+    # axs[0].xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+    # axs[0].yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
 
-    axs[1].legend(loc='lower left')
-    axs[1].set_title("Profit Curves for Best Classifiers")                                                                    
-    axs[1].set_xlabel(f"Threshold Percent")
-    axs[1].set_ylabel(f"Profit ($) on {round(len(split_data[3])/1000,0)}k Users")
-    axs[1].xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+    # axs[1].legend(loc='lower left')
+    # axs[1].set_title("Profit Curves for Best Classifiers")                                                                    
+    # axs[1].set_xlabel(f"Threshold Percent")
+    # axs[1].set_ylabel(f"Profit ($) on {round(len(split_data[3])/1000,0)}k Users")
+    # axs[1].xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+    
+    # plt.tight_layout()
+    # plt.savefig(f"images/boolean_profit_and_f1_curves.png")
+
+    fig, ax = plt.subplots(figsize=(11,9))
+    
+    gb_model.plot_profit_curve(ax, gb_plot_kwargs, vl_plot_kwargs, tp_cost=2.99, fp_cost=-5.43)
+    
+    ax.legend(loc='lower left')
+    ax.set_title("Profit Curves for Best Classifiers")                                                                    
+    ax.set_xlabel(f"Threshold Percent")
+    ax.set_ylabel(f"Profit ($) on {round(len(split_data[3])/1000,0)}k Users")
+    ax.xaxis.set_major_formatter(PercentFormatter(xmax=1.0))
     
     plt.tight_layout()
-    plt.savefig(f"images/original_profit_and_f1_curves.png")
+    # plt.savefig(f"images/boolean_profit_curve.png", dpi=400)
