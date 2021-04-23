@@ -257,7 +257,8 @@ Overall, I am happy with the results of my model but would have liked to get mor
 
 ### Lessons Learned
 * Tuning models is hard! You can try to run several different options, change/add/remove features, and play with the hyperparameters only to see a 0.1 point increase.
-\
 
 ## Future Work
 For my next capstone, I would like to have this model run on a regular frequency and update / create predictions for each user. Then I could store those predictions in Company X's database so the marketing and business intelligence teams can query them on demand and make cohorts based off the churn probabilities.
+
+To see how I accomplished this, check out [Predicting User Churn: Part II](https://github.com/joesanfilippo/churn_web_app).
